@@ -1,0 +1,634 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VideoEdit Pro - Mobile Video Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#0F0F0F',
+                        'secondary': '#1A1A1A',
+                        'accent': '#007AFF',
+                        'gray-800': '#2A2A2A',
+                        'gray-700': '#3A3A3A',
+                        'gray-600': '#4A4A4A',
+                        'success': '#34C759',
+                        'warning': '#FF9500',
+                        'error': '#FF3B30'
+                    },
+                    fontFamily: {
+                        'pro': ['SF Pro Display', 'Roboto', 'system-ui', 'sans-serif']
+                    },
+                    spacing: {
+                        '18': '4.5rem',
+                        '88': '22rem'
+                    }
+                }
+            }
+        };
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-primary text-white font-pro overflow-hidden">
+
+<!-- @COMPONENT: AppContainer [main app wrapper with navigation state management] -->
+<div id="app-container" class="h-screen flex flex-col">
+
+    <!-- @STATE: currentPage:string = 'home', currentProject:object = null -->
+    
+    <!-- Home Page -->
+    <!-- @COMPONENT: HomePage [displays user projects and creation options] -->
+    <div id="home-page" class="page-content flex-1 flex flex-col">
+        <!-- Status Bar -->
+        <div class="flex justify-between items-center px-4 py-3 bg-secondary">
+            <div class="flex items-center space-x-1">
+                <div class="w-1 h-1 bg-white rounded-full"></div>
+                <div class="w-1 h-1 bg-white rounded-full"></div>
+                <div class="w-1 h-1 bg-white rounded-full"></div>
+                <span class="text-sm ml-2">Verizon</span>
+            </div>
+            <div class="text-lg font-semibold">9:41</div>
+            <div class="flex items-center space-x-1">
+                <i class="fas fa-signal text-sm"></i>
+                <i class="fas fa-wifi text-sm"></i>
+                <i class="fas fa-battery-three-quarters text-sm"></i>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="px-6 py-6 bg-secondary">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold">VideoEdit Pro</h1>
+                <button class="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-cog text-lg"></i>
+                </button>
+            </div>
+            
+            <!-- Create New Project Button -->
+            <button data-event="click:createNewProject" class="w-full bg-accent hover:bg-blue-600 py-4 rounded-2xl flex items-center justify-center space-x-3 transition-all duration-300 transform active:scale-95">
+                <i class="fas fa-plus text-xl"></i>
+                <span class="text-lg font-semibold">Create New Project</span>
+            </button>
+        </div>
+
+        <!-- Recent Projects -->
+        <div class="flex-1 px-6 py-4 overflow-y-auto">
+            <h2 class="text-lg font-semibold mb-4 text-gray-300">Recent Projects</h2>
+            
+            <!-- @MAP: recentProjects.map(project => ( -->
+            <div class="bg-secondary rounded-2xl mb-4 overflow-hidden hover:bg-gray-800 transition-colors">
+                <!-- Mock project thumbnail showing a cityscape at sunset -->
+                <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=225" alt="Project thumbnail" data-mock-image="true" class="w-full h-32 object-cover" />
+                <div class="p-4">
+                    <h3 class="font-semibold mb-1" data-bind="project.name">Summer Vacation</h3>
+                    <p class="text-sm text-gray-400" data-bind="project.duration">2:34 min • Modified 2 days ago</p>
+                    <div class="flex justify-between items-center mt-3">
+                        <button data-event="click:continueEditing" class="text-accent hover:text-blue-400 text-sm font-medium">Continue Editing</button>
+                        <button data-event="click:deleteProject" class="text-gray-400 hover:text-error transition-colors">
+                            <i class="fas fa-trash text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-secondary rounded-2xl mb-4 overflow-hidden hover:bg-gray-800 transition-colors">
+                <!-- Mock project thumbnail showing a person skateboarding -->
+                <img src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=225" alt="Skateboarding video project" data-mock-image="true" class="w-full h-32 object-cover" />
+                <div class="p-4">
+                    <h3 class="font-semibold mb-1" data-bind="project.name">Skate Tricks</h3>
+                    <p class="text-sm text-gray-400" data-bind="project.duration">0:47 min • Modified 5 days ago</p>
+                    <div class="flex justify-between items-center mt-3">
+                        <button data-event="click:continueEditing" class="text-accent hover:text-blue-400 text-sm font-medium">Continue Editing</button>
+                        <button data-event="click:deleteProject" class="text-gray-400 hover:text-error transition-colors">
+                            <i class="fas fa-trash text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-secondary rounded-2xl mb-4 overflow-hidden hover:bg-gray-800 transition-colors">
+                <!-- Mock project thumbnail showing a cooking scene -->
+                <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=225" alt="Cooking tutorial project" data-mock-image="true" class="w-full h-32 object-cover" />
+                <div class="p-4">
+                    <h3 class="font-semibold mb-1" data-bind="project.name">Recipe Tutorial</h3>
+                    <p class="text-sm text-gray-400" data-bind="project.duration">3:12 min • Modified 1 week ago</p>
+                    <div class="flex justify-between items-center mt-3">
+                        <button data-event="click:continueEditing" class="text-accent hover:text-blue-400 text-sm font-medium">Continue Editing</button>
+                        <button data-event="click:deleteProject" class="text-gray-400 hover:text-error transition-colors">
+                            <i class="fas fa-trash text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_MAP )) -->
+        </div>
+
+        <!-- Bottom Navigation -->
+        <nav class="bg-secondary px-6 py-4">
+            <div class="flex justify-around">
+                <button class="flex flex-col items-center space-y-1 text-accent">
+                    <i class="fas fa-home text-lg"></i>
+                    <span class="text-xs">Home</span>
+                </button>
+                <button data-event="click:showProjects" class="flex flex-col items-center space-y-1 text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-folder text-lg"></i>
+                    <span class="text-xs">Projects</span>
+                </button>
+                <button data-event="click:showTemplates" class="flex flex-col items-center space-y-1 text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-magic text-lg"></i>
+                    <span class="text-xs">Templates</span>
+                </button>
+                <button data-event="click:showProfile" class="flex flex-col items-center space-y-1 text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-user text-lg"></i>
+                    <span class="text-xs">Profile</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+    <!-- @END_COMPONENT: HomePage -->
+
+    <!-- Projects Page -->
+    <!-- @COMPONENT: ProjectsPage [manages user projects and folders] -->
+    <div id="projects-page" class="page-content flex-1 flex flex-col hidden">
+        <!-- Status Bar -->
+        <div class="flex justify-between items-center px-4 py-3 bg-secondary">
+            <div class="flex items-center space-x-1">
+                <div class="w-1 h-1 bg-white rounded-full"></div>
+                <div class="w-1 h-1 bg-white rounded-full"></div>
+                <div class="w-1 h-1 bg-white rounded-full"></div>
+                <span class="text-sm ml-2">Verizon</span>
+            </div>
+            <div class="text-lg font-semibold">9:41</div>
+            <div class="flex items-center space-x-1">
+                <i class="fas fa-signal text-sm"></i>
+                <i class="fas fa-wifi text-sm"></i>
+                <i class="fas fa-battery-three-quarters text-sm"></i>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="px-6 py-6 bg-secondary">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-2xl font-bold">Projects</h1>
+                <div class="flex space-x-2">
+                    <button class="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-search text-lg"></i>
+                    </button>
+                    <button class="p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-sort text-lg"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Filter Tabs -->
+            <div class="flex space-x-4">
+                <button class="px-4 py-2 bg-accent rounded-full text-sm font-medium">All</button>
+                <button class="px-4 py-2 bg-gray-800 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors">Recent</button>
+                <button class="px-4 py-2 bg-gray-800 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors">Drafts</button>
+            </div>
+        </div>
+
+        <!-- Projects Grid -->
+        <div class="flex-1 px-6 py-4 overflow-y-auto">
+            <div class="grid grid-cols-2 gap-4">
+                <!-- @MAP: allProjects.map(project => ( -->
+                <div class="bg-secondary rounded-2xl overflow-hidden hover:bg-gray-800 transition-colors">
+                    <!-- Mock project showing a nature landscape -->
+                    <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&h=200" alt="Nature project thumbnail" data-mock-image="true" class="w-full h-24 object-cover" />
+                    <div class="p-3">
+                        <h3 class="font-medium text-sm mb-1" data-bind="project.name">Nature Walk</h3>
+                        <p class="text-xs text-gray-400" data-bind="project.info">1:23 • 720p</p>
+                    </div>
+                </div>
+
+                <div class="bg-secondary rounded-2xl overflow-hidden hover:bg-gray-800 transition-colors">
+                    <!-- Mock project showing urban photography -->
+                    <img src="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&h=200" alt="Urban project thumbnail" data-mock-image="true" class="w-full h-24 object-cover" />
+                    <div class="p-3">
+                        <h3 class="font-medium text-sm mb-1" data-bind="project.name">City Vibes</h3>
+                        <p class="text-xs text-gray-400" data-bind="project.info">2:45 • 1080p</p>
+                    </div>
+                </div>
+
+                <div class="bg-secondary rounded-2xl overflow-hidden hover:bg-gray-800 transition-colors">
+                    <!-- Mock project showing food photography -->
+                    <img src="https://pixabay.com/get/g593de838e1d4b87396aac58edb0f170cf34e43ccfa6764ebc30d48d6b6edf72be9e9cafb3f56b8409a739869818001d8edeca51ab0d2462bdfec44fdc0bfe34b_1280.jpg" alt="Food project thumbnail" data-mock-image="true" class="w-full h-24 object-cover" />
+                    <div class="p-3">
+                        <h3 class="font-medium text-sm mb-1" data-bind="project.name">Food Blog</h3>
+                        <p class="text-xs text-gray-400" data-bind="project.info">0:58 • 4K</p>
+                    </div>
+                </div>
+
+                <div class="bg-secondary rounded-2xl overflow-hidden hover:bg-gray-800 transition-colors">
+                    <!-- Mock project showing fitness content -->
+                    <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=300&h=200" alt="Fitness project thumbnail" data-mock-image="true" class="w-full h-24 object-cover" />
+                    <div class="p-3">
+                        <h3 class="font-medium text-sm mb-1" data-bind="project.name">Workout</h3>
+                        <p class="text-xs text-gray-400" data-bind="project.info">3:21 • 1080p</p>
+                    </div>
+                </div>
+                <!-- @END_MAP )) -->
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <nav class="bg-secondary px-6 py-4">
+            <div class="flex justify-around">
+                <button data-event="click:showHome" class="flex flex-col items-center space-y-1 text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-home text-lg"></i>
+                    <span class="text-xs">Home</span>
+                </button>
+                <button class="flex flex-col items-center space-y-1 text-accent">
+                    <i class="fas fa-folder text-lg"></i>
+                    <span class="text-xs">Projects</span>
+                </button>
+                <button class="flex flex-col items-center space-y-1 text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-magic text-lg"></i>
+                    <span class="text-xs">Templates</span>
+                </button>
+                <button class="flex flex-col items-center space-y-1 text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-user text-lg"></i>
+                    <span class="text-xs">Profile</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+    <!-- @END_COMPONENT: ProjectsPage -->
+
+    <!-- Video Editor Page -->
+    <!-- @COMPONENT: VideoEditorPage [main editing interface with timeline and tools] -->
+    <div id="editor-page" class="page-content flex-1 flex flex-col hidden">
+        <!-- Status Bar -->
+        <div class="flex justify-between items-center px-4 py-2 bg-primary">
+            <div class="flex items-center space-x-1">
+                <div class="w-1 h-1 bg-white rounded-full"></div>
+                <div class="w-1 h-1 bg-white rounded-full"></div>
+                <div class="w-1 h-1 bg-white rounded-full"></div>
+                <span class="text-sm ml-2">Verizon</span>
+            </div>
+            <div class="text-lg font-semibold">9:41</div>
+            <div class="flex items-center space-x-1">
+                <i class="fas fa-signal text-sm"></i>
+                <i class="fas fa-wifi text-sm"></i>
+                <i class="fas fa-battery-three-quarters text-sm"></i>
+            </div>
+        </div>
+
+        <!-- Editor Header -->
+        <div class="flex justify-between items-center px-4 py-3 bg-secondary">
+            <button data-event="click:goBack" class="p-2">
+                <i class="fas fa-arrow-left text-lg"></i>
+            </button>
+            <h1 class="text-lg font-semibold" data-bind="project.name">Summer Vacation</h1>
+            <div class="flex space-x-2">
+                <button data-event="click:undo" data-implementation="Should undo last edit action" class="p-2 text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-undo text-lg"></i>
+                </button>
+                <button data-event="click:redo" data-implementation="Should redo last undone action" class="p-2 text-gray-400 hover:text-white transition-colors">
+                    <i class="fas fa-redo text-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Video Preview -->
+        <!-- @FUNCTIONALITY: This video player should support real-time preview with canvas-based filtering -->
+        <div class="bg-black relative" style="aspect-ratio: 16/9;">
+            <!-- Mock video showing a scenic mountain landscape -->
+            <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=450" alt="Video preview frame" data-mock-image="true" class="w-full h-full object-cover" />
+            
+            <!-- Playback Controls Overlay -->
+            <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 opacity-0 hover:opacity-100 transition-opacity">
+                <div class="flex items-center space-x-6">
+                    <button data-event="click:skipBackward" class="p-3 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 transition-all">
+                        <i class="fas fa-backward text-xl"></i>
+                    </button>
+                    <button data-event="click:playPause" data-implementation="Should toggle video playback" class="p-4 rounded-full bg-accent hover:bg-blue-600 transition-all transform active:scale-95">
+                        <i class="fas fa-play text-2xl"></i>
+                    </button>
+                    <button data-event="click:skipForward" class="p-3 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 transition-all">
+                        <i class="fas fa-forward text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Crop Handles (when crop mode is active) -->
+            <!-- @STATE: isCropMode:boolean = false -->
+            <div class="absolute inset-4 border-2 border-accent rounded hidden" id="crop-overlay">
+                <div class="absolute -top-1 -left-1 w-3 h-3 bg-accent rounded-full"></div>
+                <div class="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full"></div>
+                <div class="absolute -bottom-1 -left-1 w-3 h-3 bg-accent rounded-full"></div>
+                <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-accent rounded-full"></div>
+            </div>
+        </div>
+
+        <!-- Playback Timeline -->
+        <div class="px-4 py-3 bg-secondary">
+            <div class="flex items-center space-x-3 mb-2">
+                <span class="text-sm text-gray-400" data-bind="currentTime">0:02</span>
+                <div class="flex-1 relative">
+                    <div class="h-1 bg-gray-600 rounded-full">
+                        <div class="h-1 bg-accent rounded-full" style="width: 15%"></div>
+                    </div>
+                    <div class="absolute top-1/2 transform -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg" style="left: 15%"></div>
+                </div>
+                <span class="text-sm text-gray-400" data-bind="totalTime">0:15</span>
+            </div>
+        </div>
+
+        <!-- Editing Tools -->
+        <div class="px-4 py-3 bg-gray-800">
+            <div class="flex justify-around">
+                <button data-event="click:selectTrimTool" class="flex flex-col items-center space-y-1 text-gray-400 hover:text-accent transition-colors">
+                    <i class="fas fa-cut text-lg"></i>
+                    <span class="text-xs">Trim</span>
+                </button>
+                <button data-event="click:selectSpeedTool" class="flex flex-col items-center space-y-1 text-accent">
+                    <i class="fas fa-tachometer-alt text-lg"></i>
+                    <span class="text-xs">Speed</span>
+                </button>
+                <button data-event="click:selectTextTool" class="flex flex-col items-center space-y-1 text-gray-400 hover:text-accent transition-colors">
+                    <i class="fas fa-font text-lg"></i>
+                    <span class="text-xs">Text</span>
+                </button>
+                <button data-event="click:selectFilterTool" class="flex flex-col items-center space-y-1 text-gray-400 hover:text-accent transition-colors">
+                    <i class="fas fa-adjust text-lg"></i>
+                    <span class="text-xs">Filters</span>
+                </button>
+                <button data-event="click:selectCropTool" class="flex flex-col items-center space-y-1 text-gray-400 hover:text-accent transition-colors">
+                    <i class="fas fa-crop text-lg"></i>
+                    <span class="text-xs">Crop</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Timeline with Video Thumbnails -->
+        <!-- @FUNCTIONALITY: This timeline should support frame-accurate scrubbing and multi-track editing -->
+        <div class="px-4 py-4 bg-secondary">
+            <div class="flex space-x-1 overflow-x-auto">
+                <!-- @MAP: videoFrames.map(frame => ( -->
+                <div class="flex-shrink-0 relative">
+                    <!-- Mock thumbnail showing mountain scenery -->
+                    <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=120&h=80" alt="Video frame thumbnail" data-mock-image="true" class="w-16 h-10 object-cover rounded border-2 border-transparent hover:border-accent cursor-pointer" />
+                </div>
+                <div class="flex-shrink-0 relative">
+                    <!-- Mock thumbnail showing mountain scenery from different angle -->
+                    <img src="https://pixabay.com/get/ga82aba2b9ba3882c312817335b3c4fe1979180e6d9598365446698d52fa22c93f416abb7f871324b21e31d3aa2727da0_1280.jpg" alt="Video frame thumbnail" data-mock-image="true" class="w-16 h-10 object-cover rounded border-2 border-accent cursor-pointer" />
+                    <!-- Current frame indicator -->
+                    <div class="absolute -top-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-accent"></div>
+                </div>
+                <div class="flex-shrink-0 relative">
+                    <!-- Mock thumbnail showing mountain lake -->
+                    <img src="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=120&h=80" alt="Video frame thumbnail" data-mock-image="true" class="w-16 h-10 object-cover rounded border-2 border-transparent hover:border-accent cursor-pointer" />
+                </div>
+                <div class="flex-shrink-0 relative">
+                    <!-- Mock thumbnail showing mountain sunrise -->
+                    <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=120&h=80" alt="Video frame thumbnail" data-mock-image="true" class="w-16 h-10 object-cover rounded border-2 border-transparent hover:border-accent cursor-pointer" />
+                </div>
+                <!-- @END_MAP )) -->
+            </div>
+
+            <!-- Speed Control (Active Tool) -->
+            <div class="mt-4 bg-gray-700 rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm font-medium">Speed</span>
+                    <div class="bg-accent px-3 py-1 rounded-full">
+                        <span class="text-sm font-medium" data-bind="currentSpeed">1.0x</span>
+                    </div>
+                </div>
+                <div class="relative">
+                    <div class="h-2 bg-gray-600 rounded-full">
+                        <div class="h-2 bg-accent rounded-full" style="width: 33%"></div>
+                    </div>
+                    <div class="absolute top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg" style="left: 33%"></div>
+                </div>
+                <div class="flex justify-between text-xs text-gray-400 mt-2">
+                    <span>0.1x</span>
+                    <span>1.0x</span>
+                    <span>3.0x</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audio Waveform -->
+        <!-- @FUNCTIONALITY: This should integrate with WaveSurfer.js for audio visualization -->
+        <div class="px-4 py-3 bg-gray-800">
+            <div class="flex items-center space-x-3 mb-2">
+                <i class="fas fa-music text-accent"></i>
+                <span class="text-sm text-gray-300">Background Music</span>
+            </div>
+            <div class="h-8 bg-gray-700 rounded relative overflow-hidden">
+                <!-- Mock waveform visualization -->
+                <div class="flex h-full items-end space-x-px">
+                    <div class="w-1 bg-accent opacity-60" style="height: 20%"></div>
+                    <div class="w-1 bg-accent opacity-80" style="height: 40%"></div>
+                    <div class="w-1 bg-accent" style="height: 70%"></div>
+                    <div class="w-1 bg-accent opacity-90" style="height: 50%"></div>
+                    <div class="w-1 bg-accent opacity-70" style="height: 30%"></div>
+                    <div class="w-1 bg-accent" style="height: 80%"></div>
+                    <div class="w-1 bg-accent opacity-60" style="height: 25%"></div>
+                    <div class="w-1 bg-accent opacity-80" style="height: 45%"></div>
+                    <div class="w-1 bg-accent" style="height: 90%"></div>
+                    <div class="w-1 bg-accent opacity-70" style="height: 35%"></div>
+                </div>
+                <!-- Playhead indicator -->
+                <div class="absolute top-0 bottom-0 w-0.5 bg-white" style="left: 15%"></div>
+            </div>
+        </div>
+
+        <!-- Bottom Actions -->
+        <div class="px-4 py-4 bg-secondary">
+            <div class="flex justify-between items-center">
+                <div class="flex space-x-3">
+                    <button data-event="click:addMedia" data-implementation="Should open media picker for videos/images" class="p-3 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-plus text-lg"></i>
+                    </button>
+                    <button data-event="click:deleteClip" data-implementation="Should remove selected video clip" class="p-3 bg-gray-800 rounded-full hover:bg-error hover:text-white transition-all">
+                        <i class="fas fa-trash text-lg"></i>
+                    </button>
+                </div>
+                
+                <button data-event="click:showExportOptions" data-implementation="Should show export resolution and format options" class="bg-accent hover:bg-blue-600 px-6 py-3 rounded-full font-semibold transition-all transform active:scale-95">
+                    Export
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: VideoEditorPage -->
+
+    <!-- Export Options Modal -->
+    <!-- @COMPONENT: ExportModal [handles video export settings and processing] -->
+    <div id="export-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center hidden z-50">
+        <div class="bg-secondary rounded-t-3xl w-full max-h-96 overflow-y-auto transform transition-transform translate-y-0">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">Export Video</h2>
+                    <button data-event="click:closeExportModal" class="p-2 rounded-full hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Resolution Options -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-3">Resolution</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button class="bg-accent text-white p-3 rounded-xl text-center">
+                            <div class="font-semibold">1080p HD</div>
+                            <div class="text-sm opacity-80">1920 × 1080</div>
+                        </button>
+                        <button class="bg-gray-800 hover:bg-gray-700 p-3 rounded-xl text-center transition-colors">
+                            <div class="font-semibold">720p</div>
+                            <div class="text-sm opacity-80">1280 × 720</div>
+                        </button>
+                        <button class="bg-gray-800 hover:bg-gray-700 p-3 rounded-xl text-center transition-colors">
+                            <div class="font-semibold">4K Ultra</div>
+                            <div class="text-sm opacity-80">3840 × 2160</div>
+                        </button>
+                        <button class="bg-gray-800 hover:bg-gray-700 p-3 rounded-xl text-center transition-colors">
+                            <div class="font-semibold">480p</div>
+                            <div class="text-sm opacity-80">854 × 480</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Aspect Ratio Options -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-3">Aspect Ratio</h3>
+                    <div class="flex space-x-3">
+                        <button class="flex-1 bg-accent p-3 rounded-xl text-center">
+                            <div class="font-semibold">16:9</div>
+                            <div class="text-sm opacity-80">YouTube</div>
+                        </button>
+                        <button class="flex-1 bg-gray-800 hover:bg-gray-700 p-3 rounded-xl text-center transition-colors">
+                            <div class="font-semibold">9:16</div>
+                            <div class="text-sm opacity-80">TikTok</div>
+                        </button>
+                        <button class="flex-1 bg-gray-800 hover:bg-gray-700 p-3 rounded-xl text-center transition-colors">
+                            <div class="font-semibold">1:1</div>
+                            <div class="text-sm opacity-80">Instagram</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Export Button -->
+                <button data-event="click:startExport" data-implementation="Should start video processing with FFmpeg.wasm" class="w-full bg-success hover:bg-green-600 py-4 rounded-2xl font-semibold text-lg transition-all transform active:scale-95">
+                    Start Export
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: ExportModal -->
+
+    <!-- Loading State for Processing -->
+    <!-- @COMPONENT: ProcessingModal [shows export progress and handles completion] -->
+    <div id="processing-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50">
+        <div class="bg-secondary rounded-3xl p-8 mx-6 text-center max-w-sm">
+            <div class="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <h3 class="text-xl font-bold mb-2">Processing Video...</h3>
+            <p class="text-gray-400 mb-4">This may take a few moments</p>
+            <div class="w-full bg-gray-700 rounded-full h-2 mb-4">
+                <div class="bg-accent h-2 rounded-full transition-all duration-300" style="width: 65%"></div>
+            </div>
+            <p class="text-sm text-gray-400" data-bind="processingStatus">Applying effects... 65%</p>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: ProcessingModal -->
+
+</div>
+<!-- @END_COMPONENT: AppContainer -->
+
+<script>
+(function() {
+    // TODO: Implement state management for pages, projects, and editing tools
+    // TODO: Integrate FFmpeg.wasm for browser-based video processing
+    // TODO: Add Canvas API for real-time filter application
+    // TODO: Implement timeline scrubbing with frame-accurate controls
+    // TODO: Add gesture support for mobile editing (pinch, drag, etc.)
+    // TODO: Integrate WaveSurfer.js for audio waveform visualization
+    // TODO: Add project save/load functionality with IndexedDB
+    // TODO: Implement undo/redo stack for editing operations
+    
+    let currentPage = 'home';
+    let currentProject = null;
+    let isProcessing = false;
+
+    // Page navigation
+    function showPage(pageId) {
+        document.querySelectorAll('.page-content').forEach(page => {
+            page.classList.add('hidden');
+        });
+        document.getElementById(pageId + '-page').classList.remove('hidden');
+        currentPage = pageId;
+    }
+
+    // Modal controls
+    function showModal(modalId) {
+        document.getElementById(modalId).classList.remove('hidden');
+    }
+
+    function hideModal(modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+    }
+
+    // Event listeners for navigation
+    document.addEventListener('click', function(e) {
+        const target = e.target.closest('[data-event]');
+        if (!target) return;
+
+        const action = target.getAttribute('data-event').split(':')[1];
+
+        switch(action) {
+            case 'showHome':
+                showPage('home');
+                break;
+            case 'showProjects':
+                showPage('projects');
+                break;
+            case 'createNewProject':
+                showPage('editor');
+                break;
+            case 'continueEditing':
+                showPage('editor');
+                break;
+            case 'goBack':
+                if (currentPage === 'editor') {
+                    showPage('home');
+                }
+                break;
+            case 'showExportOptions':
+                showModal('export-modal');
+                break;
+            case 'closeExportModal':
+                hideModal('export-modal');
+                break;
+            case 'startExport':
+                hideModal('export-modal');
+                showModal('processing-modal');
+                // Simulate processing
+                setTimeout(() => {
+                    hideModal('processing-modal');
+                }, 3000);
+                break;
+            case 'selectSpeedTool':
+                // Highlight speed tool as active
+                document.querySelectorAll('[data-event*="selectTool"]').forEach(btn => {
+                    btn.querySelector('i').classList.remove('text-accent');
+                    btn.querySelector('i').classList.add('text-gray-400');
+                    btn.querySelector('span').classList.remove('text-accent');
+                    btn.querySelector('span').classList.add('text-gray-400');
+                });
+                target.querySelector('i').classList.add('text-accent');
+                target.querySelector('span').classList.add('text-accent');
+                break;
+        }
+    });
+
+    // Initialize app
+    showPage('home');
+})();
+</script>
+
+</body>
+</html>

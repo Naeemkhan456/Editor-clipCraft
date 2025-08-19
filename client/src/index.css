@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 6%);
+  --foreground: hsl(0, 0%, 100%);
+  --card: hsl(0, 0%, 10%);
+  --card-foreground: hsl(0, 0%, 95%);
+  --popover: hsl(0, 0%, 10%);
+  --popover-foreground: hsl(0, 0%, 95%);
+  --primary: hsl(211, 100%, 50%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(0, 0%, 10%);
+  --secondary-foreground: hsl(0, 0%, 95%);
+  --muted: hsl(0, 0%, 16%);
+  --muted-foreground: hsl(0, 0%, 64%);
+  --accent: hsl(211, 100%, 50%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 62%, 57%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(0, 0%, 16%);
+  --input: hsl(0, 0%, 16%);
+  --ring: hsl(211, 100%, 50%);
+  --success: hsl(142, 76%, 36%);
+  --warning: hsl(38, 92%, 50%);
+  --error: hsl(7, 90%, 60%);
+  --gray-700: hsl(0, 0%, 23%);
+  --gray-600: hsl(0, 0%, 29%);
+  --radius: 1rem;
+}
+
+.dark {
+  --background: hsl(0, 0%, 6%);
+  --foreground: hsl(0, 0%, 100%);
+  --card: hsl(0, 0%, 10%);
+  --card-foreground: hsl(0, 0%, 95%);
+  --popover: hsl(0, 0%, 10%);
+  --popover-foreground: hsl(0, 0%, 95%);
+  --primary: hsl(211, 100%, 50%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(0, 0%, 10%);
+  --secondary-foreground: hsl(0, 0%, 95%);
+  --muted: hsl(0, 0%, 16%);
+  --muted-foreground: hsl(0, 0%, 64%);
+  --accent: hsl(211, 100%, 50%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 62%, 57%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(0, 0%, 16%);
+  --input: hsl(0, 0%, 16%);
+  --ring: hsl(211, 100%, 50%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased min-h-screen overflow-x-hidden;
+    font-family: 'SF Pro Display', 'Roboto', system-ui, sans-serif;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  .mobile-container {
+    @apply max-w-sm mx-auto bg-background min-h-screen;
+  }
+
+  .status-bar {
+    @apply flex justify-between items-center px-4 py-3 bg-secondary text-sm;
+  }
+
+  .page-header {
+    @apply px-6 py-6 bg-secondary;
+  }
+
+  .timeline-track {
+    @apply flex space-x-1 overflow-x-auto py-2;
+  }
+
+  .timeline-frame {
+    @apply flex-shrink-0 relative w-16 h-10 rounded border-2 border-transparent hover:border-accent cursor-pointer transition-colors;
+  }
+
+  .waveform {
+    @apply h-8 bg-gray-700 rounded relative overflow-hidden;
+  }
+
+  .export-option {
+    @apply p-3 rounded-xl text-center transition-colors cursor-pointer;
+  }
+
+  .tool-button {
+    @apply flex flex-col items-center space-y-1 text-gray-400 hover:text-accent transition-colors cursor-pointer;
+  }
+
+  .active-tool {
+    @apply text-accent;
+  }
+
+  .loading-spinner {
+    @apply w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin;
+  }
+}
+
+@layer utilities {
+  .aspect-video {
+    aspect-ratio: 16 / 9;
+  }
+
+  .aspect-tiktok {
+    aspect-ratio: 9 / 16;
+  }
+
+  .aspect-square {
+    aspect-ratio: 1 / 1;
+  }
+
+  .glass-effect {
+    @apply bg-black bg-opacity-30 backdrop-blur-sm;
+  }
+
+  .btn-primary {
+    @apply bg-accent hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-2xl transition-all transform active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-800 hover:bg-gray-700 text-white py-2 px-4 rounded-xl transition-colors;
+  }
+
+  .btn-danger {
+    @apply bg-destructive hover:bg-red-600 text-white py-2 px-4 rounded-xl transition-colors;
+  }
+
+  .card-project {
+    @apply bg-secondary rounded-2xl overflow-hidden hover:bg-gray-700 transition-colors cursor-pointer;
+  }
+
+  .nav-button {
+    @apply flex flex-col items-center space-y-1 text-gray-400 hover:text-white transition-colors;
+  }
+
+  .nav-button.active {
+    @apply text-accent;
+  }
+}
