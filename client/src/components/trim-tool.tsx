@@ -84,37 +84,48 @@ export default function TrimTool({ videoElement, duration, onTrim, onCancel }: T
             <p className="text-gray-400">Set start and end points</p>
           </div>
 
-          {/* Video Preview */}
-          {videoElement && (
-            <div className="bg-black rounded-2xl mb-6 relative aspect-video">
-              <video
-                ref={(el) => {
-                  if (el && videoElement) {
-                    el.srcObject = videoElement.srcObject;
-                    el.src = videoElement.src;
-                  }
-                }}
-                className="w-full h-full object-contain rounded-2xl"
-                muted
-              />
-              
-              {/* Play/Pause Overlay */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Button
-                  onClick={togglePlayback}
-                  variant="ghost"
-                  size="icon"
-                  className="p-4 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 text-white"
-                >
-                  {isPlaying ? (
-                    <Pause className="w-8 h-8" />
-                  ) : (
-                    <Play className="w-8 h-8" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
+              {/* Video Preview */}
+              {videoElement && (
+                <div className="bg-black rounded-2xl mb-6 relative aspect-video">
+                  <video
+                    ref={(el) => {
+                      if (el && videoElement) {
+                        try {
+                          if (videoElement.srcObject) {
+                            el.srcObject = videoElement.srcObject;
+                          } else if (videoElement.src) {
+                            el.src = videoElement.src;
+                          } else {
+                            console.warn('Video element has no valid source');
+                          }
+                        } catch (error) {
+                          console.error('Error setting video source:', error);
+                        }
+                      }
+                    }}
+                    className="w-full h-full object-contain rounded-2xl"
+                    muted
+                    playsInline
+                    preload="metadata"
+                  />
+                  
+                  {/* Play/Pause Overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Button
+                      onClick={togglePlayback}
+                      variant="ghost"
+                      size="icon"
+                      className="p-4 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 text-white"
+                    >
+                      {isPlaying ? (
+                        <Pause className="w-8 h-8" />
+                      ) : (
+                        <Play className="w-8 h-8" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
 
           {/* Timeline */}
           <div className="mb-6">
@@ -154,7 +165,10 @@ export default function TrimTool({ videoElement, duration, onTrim, onCancel }: T
                   const handleMouseMove = (e: MouseEvent) => {
                     const deltaX = e.clientX - startX;
                     const timeline = e.currentTarget as HTMLElement;
-                    const timelineRect = timeline.parentElement!.getBoundingClientRect();
+                    const parentElement = timeline.parentElement;
+                    if (!parentElement) return;
+                    
+                    const timelineRect = parentElement.getBoundingClientRect();
                     const deltaTime = (deltaX / timelineRect.width) * duration;
                     const newStartTime = Math.max(0, Math.min(endTime - 0.1, startValue + deltaTime));
                     setStartTime(newStartTime);
@@ -183,7 +197,10 @@ export default function TrimTool({ videoElement, duration, onTrim, onCancel }: T
                   const handleMouseMove = (e: MouseEvent) => {
                     const deltaX = e.clientX - startX;
                     const timeline = e.currentTarget as HTMLElement;
-                    const timelineRect = timeline.parentElement!.getBoundingClientRect();
+                    const parentElement = timeline.parentElement;
+                    if (!parentElement) return;
+                    
+                    const timelineRect = parentElement.getBoundingClientRect();
                     const deltaTime = (deltaX / timelineRect.width) * duration;
                     const newEndTime = Math.max(startTime + 0.1, Math.min(duration, startValue + deltaTime));
                     setEndTime(newEndTime);

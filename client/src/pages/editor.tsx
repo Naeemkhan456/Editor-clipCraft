@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
-import { ArrowLeft, Undo, Redo, Play, Pause, SkipBack, SkipForward, Plus, Trash2, Upload, Scissors, Crop, Palette, Type, Music } from "lucide-react";
+import { ArrowLeft, Undo, Redo, Play, Pause, SkipBack, SkipForward, Plus, Trash2, Upload, Scissors, Crop, Palette, Type, Music, Settings, LayoutTemplate, User } from "lucide-react";
 
 import VideoPlayer from "@/components/video-player";
 import Timeline from "@/components/timeline";
@@ -12,6 +12,9 @@ import CropTool from "@/components/crop-tool";
 import FiltersPanel from "@/components/filters-panel";
 import TrimTool from "@/components/trim-tool";
 import AudioWaveform from "@/components/audio-waveform";
+import SettingsModal from "@/components/settings-modal";
+import TemplateModal from "@/components/template-modal";
+import ProfileModal from "@/components/profile-modal";
 import { Button } from "@/components/ui/button";
 import { useVideoEditor } from "@/hooks/use-video-editor";
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +31,9 @@ export default function EditorPage() {
   const [processingProgress, setProcessingProgress] = useState(0);
   const [processingStatus, setProcessingStatus] = useState("Processing...");
   const [activeTool, setActiveTool] = useState("speed");
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   
   // Modal states
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -99,11 +105,22 @@ export default function EditorPage() {
       if (type === "video") {
         setCurrentVideoFile(file);
         const url = URL.createObjectURL(file);
+        
+        // Ensure videoRef is properly initialized
         if (videoRef.current) {
           videoRef.current.src = url;
-          videoRef.current.load(); // Force reload
+          videoRef.current.load();
           setVideoElement(videoRef.current);
+          
+          // Force a re-render by updating state
+          setTimeout(() => {
+            if (videoRef.current) {
+              videoRef.current.play().catch(() => {});
+              videoRef.current.pause();
+            }
+          }, 100);
         }
+        
         setShowUploadModal(false);
         toast({
           title: "Video loaded",
@@ -118,10 +135,26 @@ export default function EditorPage() {
         });
       } else if (type === "image") {
         // Handle image as video frame
+        setCurrentVideoFile(file);
+        const url = URL.createObjectURL(file);
+        
+        if (videoRef.current) {
+          videoRef.current.src = url;
+          videoRef.current.load();
+          setVideoElement(videoRef.current);
+          
+          // Set as image for 5 seconds duration
+          setTimeout(() => {
+            if (videoRef.current) {
+              videoRef.current.currentTime = 0;
+            }
+          }, 100);
+        }
+        
         setShowUploadModal(false);
         toast({
           title: "Image loaded",
-          description: "Image has been added to timeline.",
+          description: "Image has been loaded successfully.",
         });
       }
     } catch (error) {
@@ -280,6 +313,14 @@ export default function EditorPage() {
         <h1 className="text-lg font-semibold truncate mx-4">{project?.name || "New Project"}</h1>
         
         <div className="flex space-x-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowSettingsModal(true)}
+            className="text-gray-400 hover:text-white"
+          >
+            <Settings className="w-5 h-5" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"

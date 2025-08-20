@@ -1,20 +1,22 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useParams, useLocation } from 'wouter';
-import { ArrowLeft, Undo, Redo, Palette } from 'lucide-react';
-
+import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Play, Pause, SkipBack, SkipForward, Scissors, Crop, RotateCcw, 
-  Download, Upload, Volume2, Settings, Plus, Trash2, RotateCcwSquare
+  Download, Upload, Volume2, Settings, Plus, Trash2, RotateCcwSquare,
+  Undo,
+  ArrowLeft,
+  Palette,
+  Redo
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { VideoProcessor } from '@/lib/video-processor';
 import { cn } from '@/lib/utils';
 import { useVideoEditor } from '@/hooks/use-video-editor';
-// import { useParams } from 'wouter';
+import { useParams } from 'wouter';
 
 interface VideoState {
   file: File | null;
@@ -289,7 +291,6 @@ export default function VideoEditorFixed() {
         outputFormat: 'mp4',
         resolution: '1080p',
         aspectRatio: '16:9',
-        // crop: videoState.crop, // Removed to match VideoProcessingOptions type
         speed: videoState.playbackRate
       });
 
@@ -644,17 +645,6 @@ export default function VideoEditorFixed() {
           </div>
         </div>
       )}
-
-      {/* Export Button */}
-      <div className="absolute bottom-4 right-4">
-        <Button
-          onClick={handleExport}
-          className="bg-green-600 hover:bg-green-700 text-white"
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Export Video
-        </Button>
-      </div>
     </div>
   );
 }
