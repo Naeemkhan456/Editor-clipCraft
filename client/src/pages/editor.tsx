@@ -43,7 +43,7 @@ export default function EditorPage() {
   
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const { data: project } = useQuery({
+  const { data: project } = useQuery<Project>({
     queryKey: ["/api/projects", id],
   });
 
@@ -63,16 +63,8 @@ export default function EditorPage() {
     redo,
   } = useVideoEditor(project);
 
-  if (!project) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading project...</p>
-        </div>
-      </div>
-    );
-  }
+  // Always render the full component structure to maintain hook consistency
+  // The project data will be handled within the main render
 
   const tools = [
     { id: "trim", icon: Scissors, label: "Trim", action: () => setShowTrimTool(true) },
@@ -87,7 +79,7 @@ export default function EditorPage() {
   useEffect(() => {
     if (videoRef.current) {
       if (isPlaying) {
-        videoRef.current.play().catch(console.error);
+        videoRef.current.play(); // ✅
       } else {
         videoRef.current.pause();
       }
@@ -579,7 +571,7 @@ export default function EditorPage() {
       />
 
       <ProcessingModal 
-        show={isProcessing}
+        isOpen={isProcessing}
         progress={processingProgress}
         status={processingStatus}
       />

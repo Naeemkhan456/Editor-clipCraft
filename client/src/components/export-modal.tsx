@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Project } from "@shared/schema";
+import type { Project} from "@shared/schema";
 
 interface ExportModalProps {
-  isOpen: boolean;
+  show: boolean;
   onClose: () => void;
-  onExport: (settings: ExportSettings) => void;
-  project: Project;
+  onExport: (settings: ExportSettings) => Promise<void>;
+  project?: Project;
 }
 
 interface ExportSettings {
@@ -16,11 +16,11 @@ interface ExportSettings {
   quality: string;
 }
 
-export default function ExportModal({ isOpen, onClose, onExport, project }: ExportModalProps) {
+export default function ExportModal({ show, onClose, onExport, project }: ExportModalProps) {
   const [selectedResolution, setSelectedResolution] = useState("1080p");
   const [selectedAspectRatio, setSelectedAspectRatio] = useState("16:9");
 
-  if (!isOpen) return null;
+  if (!show) return null;
 
   const resolutions = [
     { id: "1080p", label: "1080p HD", subtitle: "1920 × 1080" },
@@ -35,8 +35,8 @@ export default function ExportModal({ isOpen, onClose, onExport, project }: Expo
     { id: "1:1", label: "1:1", subtitle: "Instagram" },
   ];
 
-  const handleExport = () => {
-    onExport({
+  const handleExport = async () => {
+    await onExport({
       resolution: selectedResolution,
       aspectRatio: selectedAspectRatio,
       quality: "high",
@@ -102,12 +102,12 @@ export default function ExportModal({ isOpen, onClose, onExport, project }: Expo
           </div>
 
           {/* Export Button */}
-          <Button
-            onClick={handleExport}
-            className="w-full bg-success hover:bg-green-600 py-4 rounded-2xl font-semibold text-lg"
-          >
-            Start Export
-          </Button>
+            <Button
+              onClick={handleExport}
+              className="w-full bg-success hover:bg-green-600 py-4 rounded-2xl font-semibold text-lg"
+            >
+              Start Export
+            </Button>
         </div>
       </div>
     </div>

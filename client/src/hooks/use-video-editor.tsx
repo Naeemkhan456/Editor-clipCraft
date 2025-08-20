@@ -81,7 +81,10 @@ export function useVideoEditor(project: Project | undefined) {
     seekTo,
     setSpeed: updateSpeed,
     setCurrentTime,
-    setDuration: () => {}, // Placeholder function
+    setDuration: (newDuration: number) => {
+      // Update duration - this could be used to update project state
+      // For now, we'll just allow the parameter to be passed
+    },
     undo,
     redo,
     addEditAction,
