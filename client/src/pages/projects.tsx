@@ -49,14 +49,14 @@ export default function ProjectsPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full bg-gray-800 hover:bg-gray-700"
+              className="rounded-full hover:bg-[#6344fd]/30 text-[#6344fd] transition-all duration-200"
             >
               <Search className="w-5 h-5" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full bg-gray-800 hover:bg-gray-700"
+              className="rounded-full hover:bg-[#6344fd]/30 text-[#6344fd] transition-all duration-200"
             >
               <SortAsc className="w-5 h-5" />
             </Button>
@@ -72,8 +72,8 @@ export default function ProjectsPage() {
               onClick={() => setActiveFilter(filter.id)}
               className={`px-4 py-2 rounded-full text-sm font-medium ${
                 activeFilter === filter.id 
-                  ? "bg-accent text-white" 
-                  : "bg-gray-800 hover:bg-gray-700"
+                  ? "bg-[#6344fd] text-white hover:bg-primary/90"
+                         : "bg-gray-800 hover:bg-gray-700"
               }`}
             >
               {filter.label}

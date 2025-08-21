@@ -93,7 +93,7 @@
 }
 
   .page-header {
-    @apply px-6 py-6 bg-secondary;
+    @apply px-6 py-6;
   }
 
   .timeline-track {

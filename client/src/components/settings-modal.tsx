@@ -578,7 +578,7 @@ export default function SettingsModal({ open, onOpenChange }: SettingsModalProps
           <Button className="hover:bg-[#6b4df5] rounded-full" variant="outline" onClick={handleReset}>
             Reset to Defaults
           </Button>
-          <Button className="  bg-[#7c5cfa] hover:bg-[#6b4df5] text-white py-1 rounded-full font-semibold text-sm" onClick={handleSave}>
+          <Button className="bg-[#7c5cfa] hover:bg-[#6b4df5] text-white py-1 rounded-full font-semibold text-sm" onClick={handleSave}>
             Save Settings
           </Button>
         </div>
