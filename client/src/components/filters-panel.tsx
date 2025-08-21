@@ -47,7 +47,7 @@ export default function FiltersPanel({ currentFilters, onFiltersChange, onClose 
               onClick={onClose}
               variant="ghost"
               size="icon"
-              className="rounded-full"
+              className="rounded-full hover:bg-[#6344fd]/30 text-[#6344fd] transition-all duration-200"
             >
               ✕
             </Button>
@@ -63,8 +63,8 @@ export default function FiltersPanel({ currentFilters, onFiltersChange, onClose 
                   onClick={() => applyPreset(preset.id)}
                   className={`flex-shrink-0 flex flex-col items-center p-3 rounded-xl transition-colors ${
                     activeFilter === preset.id
-                      ? "bg-accent text-white"
-                      : "bg-gray-800 hover:bg-gray-700"
+                    ? "bg-[#6344fd] text-white hover:bg-primary/90"
+                         : "bg-gray-800 hover:bg-gray-700"
                   }`}
                 >
                   <span className="text-2xl mb-1">{preset.preview}</span>
@@ -81,7 +81,7 @@ export default function FiltersPanel({ currentFilters, onFiltersChange, onClose 
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm text-gray-400">Brightness</label>
-                <span className="text-sm text-accent">{customFilters.brightness || 100}%</span>
+                <span className="text-sm text-[#6344fd]">{customFilters.brightness || 100} <span className="text-gray-400">%</span></span>
               </div>
               <input
                 type="range"
@@ -89,14 +89,14 @@ export default function FiltersPanel({ currentFilters, onFiltersChange, onClose 
                 max="200"
                 value={customFilters.brightness || 100}
                 onChange={(e) => updateCustomFilter('brightness', parseInt(e.target.value))}
-                className="w-full h-2 bg-gray-600 rounded-full appearance-none cursor-pointer"
+                className="slider w-full h-2 bg-gray-600 rounded-full appearance-none cursor-pointer"
               />
             </div>
 
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm text-gray-400">Contrast</label>
-                <span className="text-sm text-accent">{customFilters.contrast || 100}%</span>
+                <span className="text-sm text-[#6344fd]">{customFilters.contrast || 100}<span className="text-gray-400">%</span></span>
               </div>
               <input
                 type="range"
@@ -104,14 +104,14 @@ export default function FiltersPanel({ currentFilters, onFiltersChange, onClose 
                 max="200"
                 value={customFilters.contrast || 100}
                 onChange={(e) => updateCustomFilter('contrast', parseInt(e.target.value))}
-                className="w-full h-2 bg-gray-600 rounded-full appearance-none cursor-pointer"
+                className="slider w-full h-2 bg-gray-600 rounded-full appearance-none cursor-pointer"
               />
             </div>
 
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm text-gray-400">Saturation</label>
-                <span className="text-sm text-accent">{customFilters.saturation || 100}%</span>
+                <span className="text-sm text-[#6344fd]">{customFilters.saturation || 100}<span className="text-gray-400">%</span></span>
               </div>
               <input
                 type="range"
@@ -119,14 +119,14 @@ export default function FiltersPanel({ currentFilters, onFiltersChange, onClose 
                 max="200"
                 value={customFilters.saturation || 100}
                 onChange={(e) => updateCustomFilter('saturation', parseInt(e.target.value))}
-                className="w-full h-2 bg-gray-600 rounded-full appearance-none cursor-pointer"
+                className="slider w-full h-2 bg-gray-600 rounded-full appearance-none cursor-pointer"
               />
             </div>
 
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm text-gray-400">Hue</label>
-                <span className="text-sm text-accent">{customFilters.hue || 0}°</span>
+                <span className="text-sm text-[#6344fd]">{customFilters.hue || 0} <span className="text-gray-400">°</span></span>
               </div>
               <input
                 type="range"
@@ -134,14 +134,14 @@ export default function FiltersPanel({ currentFilters, onFiltersChange, onClose 
                 max="180"
                 value={customFilters.hue || 0}
                 onChange={(e) => updateCustomFilter('hue', parseInt(e.target.value))}
-                className="w-full h-2 bg-gray-600 rounded-full appearance-none cursor-pointer"
+                className="slider w-full h-2 bg-gray-600 rounded-full appearance-none cursor-pointer"
               />
             </div>
 
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm text-gray-400">Blur</label>
-                <span className="text-sm text-accent">{customFilters.blur || 0}px</span>
+                <span className="text-sm text-[#6344fd]">{customFilters.blur || 0}<span className="text-gray-400">px</span></span>
               </div>
               <input
                 type="range"
@@ -150,14 +150,14 @@ export default function FiltersPanel({ currentFilters, onFiltersChange, onClose 
                 step="0.1"
                 value={customFilters.blur || 0}
                 onChange={(e) => updateCustomFilter('blur', parseFloat(e.target.value))}
-                className="w-full h-2 bg-gray-600 rounded-full appearance-none cursor-pointer"
+                className="slider w-full h-2 bg-gray-600 rounded-full appearance-none cursor-pointer"
               />
             </div>
 
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-sm text-gray-400">Sepia</label>
-                <span className="text-sm text-accent">{customFilters.sepia || 0}%</span>
+                <span className="text-sm text-[#6344fd]">{customFilters.sepia || 0}<span className="text-gray-400">%</span></span>
               </div>
               <input
                 type="range"
@@ -165,7 +165,7 @@ export default function FiltersPanel({ currentFilters, onFiltersChange, onClose 
                 max="100"
                 value={customFilters.sepia || 0}
                 onChange={(e) => updateCustomFilter('sepia', parseInt(e.target.value))}
-                className="w-full h-2 bg-gray-600 rounded-full appearance-none cursor-pointer"
+                className="slider w-full h-2 bg-gray-600 rounded-full appearance-none cursor-pointer"
               />
             </div>
           </div>
@@ -174,7 +174,7 @@ export default function FiltersPanel({ currentFilters, onFiltersChange, onClose 
           <Button
             onClick={() => applyPreset("none")}
             variant="outline"
-            className="w-full mt-6"
+            className="w-full mt-6 w-full bg-[#7c5cfa] hover:bg-[#6b4df5] text-white py-4 rounded-2xl font-semibold text-lg"
           >
             Reset All Filters
           </Button>

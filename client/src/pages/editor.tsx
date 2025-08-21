@@ -122,17 +122,17 @@ export default function EditorPage() {
         }
         
         setShowUploadModal(false);
-        toast({
-          title: "Video loaded",
-          description: "Video file has been loaded successfully.",
-        });
+        // toast({
+        //   title: "Video loaded",
+        //   description: "Video file has been loaded successfully.",
+        // });
       } else if (type === "audio") {
         setCurrentAudioFile(file);
         setShowUploadModal(false);
-        toast({
-          title: "Audio loaded", 
-          description: "Audio file has been loaded successfully.",
-        });
+        // toast({
+        //   title: "Audio loaded", 
+        //   description: "Audio file has been loaded successfully.",
+        // });
       } else if (type === "image") {
         // Handle image as video frame
         setCurrentVideoFile(file);
@@ -152,10 +152,10 @@ export default function EditorPage() {
         }
         
         setShowUploadModal(false);
-        toast({
-          title: "Image loaded",
-          description: "Image has been loaded successfully.",
-        });
+        // toast({
+        //   title: "Image loaded",
+        //   description: "Image has been loaded successfully.",
+        // });
       }
     } catch (error) {
       toast({
@@ -191,10 +191,10 @@ export default function EditorPage() {
         videoRef.current.src = url;
       }
 
-      toast({
-        title: "Video trimmed",
-        description: "Video has been trimmed successfully.",
-      });
+      // toast({
+      //   title: "Video trimmed",
+      //   description: "Video has been trimmed successfully.",
+      // });
     } catch (error) {
       toast({
         title: "Error",
@@ -239,10 +239,10 @@ export default function EditorPage() {
         const url = URL.createObjectURL(croppedFile);
         videoRef.current!.src = url;
 
-        toast({
-          title: "Video cropped",
-          description: "Video has been cropped successfully.",
-        });
+        // toast({
+        //   title: "Video cropped",
+        //   description: "Video has been cropped successfully.",
+        // });
       }
     } catch (error) {
       toast({
@@ -258,10 +258,10 @@ export default function EditorPage() {
   // Apply speed change - simplified for immediate feedback
   const handleSpeedChange = (newSpeed: number) => {
     setSpeed(newSpeed);
-    toast({
-      title: "Speed changed",
-      description: `Video speed set to ${newSpeed}x`,
-    });
+    // toast({
+    //   title: "Speed changed",
+    //   description: `Video speed set to ${newSpeed}x`,
+    // });
   };
 
   // Apply filters
@@ -302,13 +302,15 @@ export default function EditorPage() {
       
       {/* Editor Header */}
       <div className="flex justify-between items-center px-4 py-3 bg-secondary">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setLocation("/")}
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
+      <Button
+  variant="ghost"
+  size="icon"
+  onClick={() => setLocation("/")}
+  className="rounded-full hover:bg-[#6344fd]/30 text-[#6344fd] transition-all duration-200"
+>
+  <ArrowLeft className="w-5 h-5" />
+</Button>
+
         
         <h1 className="text-lg font-semibold truncate mx-4">{project?.name || "New Project"}</h1>
         
@@ -317,7 +319,7 @@ export default function EditorPage() {
             variant="ghost"
             size="icon"
             onClick={() => setShowSettingsModal(true)}
-            className="text-gray-400 hover:text-white"
+            className="rounded-full hover:bg-[#6344fd]/30 text-[#6344fd] transition-all duration-200"
           >
             <Settings className="w-5 h-5" />
           </Button>
@@ -326,7 +328,10 @@ export default function EditorPage() {
             size="icon"
             onClick={undo}
             disabled={!canUndo}
-            className={`${!canUndo ? "text-gray-600" : "text-gray-400 hover:text-white"}`}
+          className={`${!canUndo ? "text-gray-600" : "text-gray-400"} rounded-full hover:text-white hover:bg-[#6344fd]/30`}
+
+
+
           >
             <Undo className="w-5 h-5" />
           </Button>
@@ -335,7 +340,10 @@ export default function EditorPage() {
             size="icon"
             onClick={redo}
             disabled={!canRedo}
-            className={`${!canRedo ? "text-gray-600" : "text-gray-400 hover:text-white"}`}
+          className={`${!canUndo ? "text-gray-600" : "text-gray-400"} rounded-full hover:text-white hover:bg-[#6344fd]/30`}
+
+
+
           >
             <Redo className="w-5 h-5" />
           </Button>
@@ -477,11 +485,11 @@ export default function EditorPage() {
         <div className="px-4 py-4 bg-gray-700">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-medium">Speed</span>
-            <div className="bg-accent px-3 py-1 rounded-full">
+            <div className="hover:bg-primary/90 bg-[#6344fd] text-white px-3 py-1 rounded-full">
               <span className="text-sm font-medium">{speed.toFixed(1)}x</span>
             </div>
           </div>
-          <div className="relative">
+          <div className="relative ">
             <input
               type="range"
               min="0.1"
@@ -517,7 +525,7 @@ export default function EditorPage() {
       <div className="p-4">
         <Button
           onClick={() => setShowUploadModal(true)}
-          className="w-full bg-accent hover:bg-blue-600 flex items-center space-x-2"
+          className="w-full bg-accent hover:bg-primary-600 bg-[#6344fd] text-white flex items-center space-x-2"
         >
           <Plus className="w-5 h-5" />
           <span>Add Media</span>
@@ -598,7 +606,7 @@ export default function EditorPage() {
           
           <Button
             onClick={() => setShowExportModal(true)}
-            className="btn-primary"
+            className="hover:bg-primary/90 bg-[#6344fd] text-white"
           >
             Export
           </Button>

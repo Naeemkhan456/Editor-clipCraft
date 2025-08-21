@@ -553,6 +553,11 @@ export default function SettingsModal({ open, onOpenChange }: SettingsModalProps
                     <SelectItem value="de">German</SelectItem>
                     <SelectItem value="ja">Japanese</SelectItem>
                     <SelectItem value="zh">Chinese</SelectItem>
+                    <SelectItem value="ru">Russian</SelectItem>
+                    <SelectItem value="pt">Portuguese</SelectItem>
+                    <SelectItem value="ar">Arabic</SelectItem>
+                    <SelectItem value="hi">Hindi</SelectItem>
+                    <SelectItem value="ur">Urdu</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -570,10 +575,10 @@ export default function SettingsModal({ open, onOpenChange }: SettingsModalProps
         </Tabs>
 
         <div className="flex justify-end space-x-2 mt-6">
-          <Button variant="outline" onClick={handleReset}>
+          <Button className="hover:bg-[#6b4df5] rounded-full" variant="outline" onClick={handleReset}>
             Reset to Defaults
           </Button>
-          <Button onClick={handleSave}>
+          <Button className="  bg-[#7c5cfa] hover:bg-[#6b4df5] text-white py-1 rounded-full font-semibold text-sm" onClick={handleSave}>
             Save Settings
           </Button>
         </div>

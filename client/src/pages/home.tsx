@@ -62,10 +62,10 @@ export default function HomePage() {
       const newProject = await response.json();
       setLocation(`/editor/${newProject.id}`);
       
-      toast({
-        title: "Project created",
-        description: "New video project has been created successfully.",
-      });
+      // toast({
+      //   title: "Project created",
+      //   description: "New video project has been created successfully.",
+      // });
     } catch (error) {
       toast({
         title: "Error",

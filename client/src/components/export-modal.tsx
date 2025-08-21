@@ -64,18 +64,19 @@ export default function ExportModal({ show, onClose, onExport, project }: Export
             <h3 className="text-lg font-semibold mb-3">Resolution</h3>
             <div className="grid grid-cols-2 gap-3">
               {resolutions.map((resolution) => (
-                <button
-                  key={resolution.id}
-                  onClick={() => setSelectedResolution(resolution.id)}
-                  className={`export-option ${
-                    selectedResolution === resolution.id
-                      ? "bg-accent text-white"
-                      : "bg-gray-800 hover:bg-gray-700"
-                  }`}
-                >
-                  <div className="font-semibold">{resolution.label}</div>
-                  <div className="text-sm opacity-80">{resolution.subtitle}</div>
-                </button>
+            <button
+            key={resolution.id}
+            onClick={() => setSelectedResolution(resolution.id)}
+            className={`export-option ${
+              selectedResolution === resolution.id
+                ? "bg-[#6344fd] text-white hover:bg-primary/90"
+                : "bg-gray-800 hover:bg-gray-700"
+            }`}
+          >
+            <div className="font-semibold">{resolution.label}</div>
+            <div className="text-sm opacity-80">{resolution.subtitle}</div>
+          </button>
+
               ))}
             </div>
           </div>
@@ -90,8 +91,8 @@ export default function ExportModal({ show, onClose, onExport, project }: Export
                   onClick={() => setSelectedAspectRatio(ratio.id)}
                   className={`flex-1 export-option ${
                     selectedAspectRatio === ratio.id
-                      ? "bg-accent text-white"
-                      : "bg-gray-800 hover:bg-gray-700"
+                        ? "bg-[#6344fd] text-white hover:bg-primary/90"
+                         : "bg-gray-800 hover:bg-gray-700"
                   }`}
                 >
                   <div className="font-semibold">{ratio.label}</div>
@@ -102,12 +103,14 @@ export default function ExportModal({ show, onClose, onExport, project }: Export
           </div>
 
           {/* Export Button */}
-            <Button
-              onClick={handleExport}
-              className="w-full bg-success hover:bg-green-600 py-4 rounded-2xl font-semibold text-lg"
-            >
-              Start Export
-            </Button>
+<Button
+  onClick={handleExport}
+  className="w-full bg-[#7c5cfa] hover:bg-[#6b4df5] text-white py-4 rounded-2xl font-semibold text-lg"
+>
+  Start Export
+</Button>
+
+
         </div>
       </div>
     </div>
