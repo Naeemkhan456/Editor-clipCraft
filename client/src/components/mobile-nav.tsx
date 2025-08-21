@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Home, Folder, Wand2, User } from "lucide-react";
 import { useLocation } from "wouter";
 import TemplateModal from "@/components/template-modal";
-import ProfileModal from "@/components/profile-modal-fixed";
+import ProfileModal from "@/components/profile-modal";
 
 interface MobileNavProps {
   onNavigate: (path: string) => void;

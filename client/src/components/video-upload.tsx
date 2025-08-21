@@ -25,13 +25,56 @@ export default function VideoUpload({ onFileSelected, onClose }: VideoUploadProp
   }, []);
 
   const handleFileSelection = (file: File) => {
+    console.log("File selected for upload:", file.name, "Type:", file.type, "Size:", file.size);
+    
     const fileType = file.type.toLowerCase();
     
+    // Check file size (max 500MB for videos, 100MB for images/audio)
+    const maxSize = fileType.startsWith('video/') ? 500 * 1024 * 1024 : 100 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({
+        title: "File too large",
+        description: `File size must be less than ${maxSize / (1024 * 1024)}MB.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (fileType.startsWith('video/')) {
+      // Validate video formats
+      const supportedVideoFormats = ['video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/mov', 'video/wmv'];
+      if (!supportedVideoFormats.includes(fileType)) {
+        toast({
+          title: "Unsupported video format",
+          description: "Please select MP4, WebM, OGG, AVI, MOV, or WMV files.",
+          variant: "destructive",
+        });
+        return;
+      }
       onFileSelected(file, 'video');
     } else if (fileType.startsWith('image/')) {
+      // Validate image formats
+      const supportedImageFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!supportedImageFormats.includes(fileType)) {
+        toast({
+          title: "Unsupported image format",
+          description: "Please select JPEG, PNG, GIF, or WebP files.",
+          variant: "destructive",
+        });
+        return;
+      }
       onFileSelected(file, 'image');
     } else if (fileType.startsWith('audio/')) {
+      // Validate audio formats
+      const supportedAudioFormats = ['audio/mp3', 'audio/wav', 'audio/ogg', 'audio/aac', 'audio/m4a'];
+      if (!supportedAudioFormats.includes(fileType)) {
+        toast({
+          title: "Unsupported audio format",
+          description: "Please select MP3, WAV, OGG, AAC, or M4A files.",
+          variant: "destructive",
+        });
+        return;
+      }
       onFileSelected(file, 'audio');
     } else {
       toast({

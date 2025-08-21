@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
-import { ArrowLeft, Undo, Redo, Play, Pause, SkipBack, SkipForward, Plus, Trash2, Upload, Scissors, Crop, Palette, Type, Music, Settings, LayoutTemplate, User } from "lucide-react";
+import { ArrowLeft, Undo, Redo, Play, Pause, SkipBack, SkipForward, Plus, Trash2, Upload, Scissors, Crop, Palette, Type, Music, Settings, LayoutTemplate, User, Zap } from "lucide-react";
 
 import VideoPlayer from "@/components/video-player";
 import Timeline from "@/components/timeline";
@@ -15,6 +15,8 @@ import AudioWaveform from "@/components/audio-waveform";
 import SettingsModal from "@/components/settings-modal";
 import TemplateModal from "@/components/template-modal";
 import ProfileModal from "@/components/profile-modal";
+import TextOverlay, { type TextOverlayData } from "@/components/text-overlay";
+import Transitions, { type TransitionData } from "@/components/transitions";
 import { Button } from "@/components/ui/button";
 import { useVideoEditor } from "@/hooks/use-video-editor";
 import { useToast } from "@/hooks/use-toast";
@@ -40,12 +42,22 @@ export default function EditorPage() {
   const [showCropTool, setShowCropTool] = useState(false);
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
   const [showTrimTool, setShowTrimTool] = useState(false);
+  const [showTextOverlay, setShowTextOverlay] = useState(false);
+  const [showTransitions, setShowTransitions] = useState(false);
   
   // Media states
   const [currentVideoFile, setCurrentVideoFile] = useState<File | null>(null);
   const [currentAudioFile, setCurrentAudioFile] = useState<File | null>(null);
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
   const [currentFilters, setCurrentFilters] = useState<FilterOptions>({});
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string>('');
+  
+  // Enhanced editing states
+  const [textOverlays, setTextOverlays] = useState<TextOverlayData[]>([]);
+  const [transitions, setTransitions] = useState<TransitionData[]>([]);
+  const [selectedOverlay, setSelectedOverlay] = useState<TextOverlayData | null>(null);
+  const [selectedTransition, setSelectedTransition] = useState<TransitionData | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -77,66 +89,117 @@ export default function EditorPage() {
     { id: "speed", icon: SkipForward, label: "Speed", action: () => setActiveTool("speed") },
     { id: "crop", icon: Crop, label: "Crop", action: () => setShowCropTool(true) },
     { id: "filters", icon: Palette, label: "Filters", action: () => setShowFiltersPanel(true) },
-    { id: "text", icon: Type, label: "Text", action: () => setActiveTool("text") },
+    { id: "text", icon: Type, label: "Text", action: () => setShowTextOverlay(true) },
+    { id: "transitions", icon: Zap, label: "Transitions", action: () => setShowTransitions(true) },
     { id: "audio", icon: Music, label: "Audio", action: () => setActiveTool("audio") },
   ];
 
+  // Cleanup video URLs when component unmounts or video changes
+  useEffect(() => {
+    return () => {
+      if (videoUrl) {
+        URL.revokeObjectURL(videoUrl);
+      }
+    };
+  }, [videoUrl]);
+
   // Sync video playback with state
   useEffect(() => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.play(); // ✅
-      } else {
-        videoRef.current.pause();
+    if (videoRef.current && videoRef.current.src) {
+      try {
+        if (isPlaying) {
+          const playPromise = videoRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((error) => {
+              console.log("Playback prevented:", error);
+              // Don't show error for user-initiated actions
+            });
+          }
+        } else {
+          videoRef.current.pause();
+        }
+      } catch (error) {
+        console.log("Playback error:", error);
       }
     }
   }, [isPlaying]);
 
   // Sync video time with state
   useEffect(() => {
-    if (videoRef.current && Math.abs(videoRef.current.currentTime - currentTime) > 0.5) {
-      videoRef.current.currentTime = currentTime;
+    if (videoRef.current && videoRef.current.src && Math.abs(videoRef.current.currentTime - currentTime) > 0.5) {
+      try {
+        videoRef.current.currentTime = currentTime;
+      } catch (error) {
+        console.log("Seek error:", error);
+      }
     }
   }, [currentTime]);
 
   // File upload handler
   const handleFileSelected = async (file: File, type: "video" | "image" | "audio") => {
+    console.log("File selected:", file.name, "Type:", type, "Size:", file.size);
+    
     try {
       if (type === "video") {
+        setIsVideoLoading(true);
         setCurrentVideoFile(file);
         const url = URL.createObjectURL(file);
+        setVideoUrl(url);
+        
+        console.log("Video URL created:", url);
         
         // Ensure videoRef is properly initialized
         if (videoRef.current) {
           videoRef.current.src = url;
           videoRef.current.load();
-          setVideoElement(videoRef.current);
           
-          // Force a re-render by updating state
-          setTimeout(() => {
+          // Wait for video to load metadata before setting video element
+          videoRef.current.onloadedmetadata = () => {
+            console.log("Video metadata loaded, duration:", videoRef.current?.duration);
+            setVideoElement(videoRef.current);
             if (videoRef.current) {
-              videoRef.current.play().catch(() => {});
-              videoRef.current.pause();
+              setDuration(videoRef.current.duration);
+              // Reset current time to 0
+              setCurrentTime(0);
             }
-          }, 100);
+            setIsVideoLoading(false);
+          };
+          
+          // Handle video load errors
+          videoRef.current.onerror = (e) => {
+            console.error("Video load error:", e);
+            setIsVideoLoading(false);
+            toast({
+              title: "Error",
+              description: "Failed to load video file.",
+              variant: "destructive",
+            });
+          };
+          
+          // Add more event listeners for debugging
+          videoRef.current.onloadstart = () => console.log("Video load started");
+          videoRef.current.oncanplay = () => console.log("Video can play");
+          videoRef.current.onloadeddata = () => console.log("Video data loaded");
         }
         
         setShowUploadModal(false);
-        // toast({
-        //   title: "Video loaded",
-        //   description: "Video file has been loaded successfully.",
-        // });
+        toast({
+          title: "Video loaded",
+          description: "Video file has been loaded successfully.",
+        });
       } else if (type === "audio") {
         setCurrentAudioFile(file);
         setShowUploadModal(false);
-        // toast({
-        //   title: "Audio loaded", 
-        //   description: "Audio file has been loaded successfully.",
-        // });
+        toast({
+          title: "Audio loaded", 
+          description: "Audio file has been loaded successfully.",
+        });
       } else if (type === "image") {
         // Handle image as video frame
+        setIsVideoLoading(true);
         setCurrentVideoFile(file);
         const url = URL.createObjectURL(file);
+        setVideoUrl(url);
         
         if (videoRef.current) {
           videoRef.current.src = url;
@@ -148,16 +211,19 @@ export default function EditorPage() {
             if (videoRef.current) {
               videoRef.current.currentTime = 0;
             }
+            setIsVideoLoading(false);
           }, 100);
         }
         
         setShowUploadModal(false);
-        // toast({
-        //   title: "Image loaded",
-        //   description: "Image has been loaded successfully.",
-        // });
+        toast({
+          title: "Image loaded",
+          description: "Image has been loaded successfully.",
+        });
       }
     } catch (error) {
+      console.error("File handling error:", error);
+      setIsVideoLoading(false);
       toast({
         title: "Error",
         description: "Failed to load media file.",
@@ -236,7 +302,7 @@ export default function EditorPage() {
         const croppedFile = new File([croppedBlob], "cropped.mp4", { type: "video/mp4" });
         setCurrentVideoFile(croppedFile);
         
-        const url = URL.createObjectURL(croppedFile);
+        const url = URL.createObjectURL(croppedBlob);
         videoRef.current!.src = url;
 
         // toast({
@@ -253,6 +319,32 @@ export default function EditorPage() {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // Text overlay handler
+  const handleTextOverlay = (overlay: TextOverlayData) => {
+    if (selectedOverlay) {
+      // Edit existing overlay
+      setTextOverlays(prev => prev.map(o => o.id === selectedOverlay.id ? overlay : o));
+      setSelectedOverlay(null);
+    } else {
+      // Add new overlay
+      setTextOverlays(prev => [...prev, overlay]);
+    }
+    setShowTextOverlay(false);
+  };
+
+  // Transition handler
+  const handleTransition = (transition: TransitionData) => {
+    if (selectedTransition) {
+      // Edit existing transition
+      setTransitions(prev => prev.map(t => t.id === selectedTransition.id ? transition : t));
+      setSelectedTransition(null);
+    } else {
+      // Add new transition
+      setTransitions(prev => [...prev, transition]);
+    }
+    setShowTransitions(false);
   };
 
   // Apply speed change - simplified for immediate feedback
@@ -281,6 +373,28 @@ export default function EditorPage() {
     }
   };
 
+  // Delete overlay
+  const deleteOverlay = (overlayId: string) => {
+    setTextOverlays(prev => prev.filter(o => o.id !== overlayId));
+  };
+
+  // Delete transition
+  const deleteTransition = (transitionId: string) => {
+    setTransitions(prev => prev.filter(t => t.id !== transitionId));
+  };
+
+  // Edit overlay
+  const editOverlay = (overlay: TextOverlayData) => {
+    setSelectedOverlay(overlay);
+    setShowTextOverlay(true);
+  };
+
+  // Edit transition
+  const editTransition = (transition: TransitionData) => {
+    setSelectedTransition(transition);
+    setShowTransitions(true);
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -295,6 +409,16 @@ export default function EditorPage() {
     setTimeout(() => {
       setIsProcessing(false);
     }, 3000);
+  };
+
+  // Check if text overlay should be visible at current time
+  const isOverlayVisible = (overlay: TextOverlayData) => {
+    return currentTime >= overlay.startTime && currentTime <= overlay.endTime;
+  };
+
+  // Check if transition should be active at current time
+  const isTransitionActive = (transition: TransitionData) => {
+    return currentTime >= transition.startTime && currentTime <= transition.startTime + transition.duration;
   };
 
   return (
@@ -351,21 +475,50 @@ export default function EditorPage() {
       </div>
 
       {/* Video Preview */}
-      {currentVideoFile ? (
+      {currentVideoFile && videoUrl ? (
         <div className="flex-1 flex items-center justify-center bg-black relative">
+          {isVideoLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 z-10">
+              <div className="text-center text-white">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                <p>Loading video...</p>
+              </div>
+            </div>
+          )}
+          
           <video
             ref={videoRef}
             className="max-w-full max-h-full object-contain"
             controls={false}
-            onClick={togglePlayback}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              // Only toggle if video is loaded
+              if (videoRef.current && videoRef.current.src) {
+                togglePlayback();
+              }
+            }}
             onLoadedMetadata={() => {
               if (videoRef.current) {
                 setDuration(videoRef.current.duration);
+                setVideoElement(videoRef.current);
               }
             }}
             onTimeUpdate={() => {
               if (videoRef.current) {
                 setCurrentTime(videoRef.current.currentTime);
+              }
+            }}
+            onPlay={() => {
+              // Update state when video starts playing
+              if (!isPlaying) {
+                togglePlayback();
+              }
+            }}
+            onPause={() => {
+              // Update state when video pauses
+              if (isPlaying) {
+                togglePlayback();
               }
             }}
             style={{ filter: Object.keys(currentFilters).length > 0 ? 
@@ -382,8 +535,36 @@ export default function EditorPage() {
               }).join(' ') : 'none'
             }}
           />
+          
+          {/* Text Overlays */}
+          {textOverlays.map(overlay => (
+            isOverlayVisible(overlay) && (
+              <div
+                key={overlay.id}
+                className="absolute pointer-events-none select-none"
+                style={{
+                  left: `${overlay.x}%`,
+                  top: `${overlay.y}%`,
+                  transform: 'translate(-50%, -50%)',
+                  fontSize: `${overlay.fontSize}px`,
+                  fontFamily: overlay.fontFamily,
+                  color: overlay.color,
+                  backgroundColor: overlay.backgroundColor,
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  opacity: overlay.backgroundOpacity,
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                  whiteSpace: 'nowrap',
+                  zIndex: 10
+                }}
+              >
+                {overlay.text}
+              </div>
+            )
+          ))}
+          
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            {!isPlaying && (
+            {!isPlaying && !isVideoLoading && (
               <div className="bg-black bg-opacity-50 rounded-full p-4">
                 <Play className="w-12 h-12 text-white" />
               </div>
@@ -508,6 +689,80 @@ export default function EditorPage() {
         </div>
       )}
 
+      {/* Text Overlays List */}
+      {activeTool === "text" && textOverlays.length > 0 && (
+        <div className="px-4 py-3 bg-gray-700">
+          <h3 className="text-sm font-medium mb-3">Text Overlays</h3>
+          <div className="space-y-2">
+            {textOverlays.map(overlay => (
+              <div key={overlay.id} className="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
+                <div className="flex-1">
+                  <div className="text-sm font-medium">{overlay.text}</div>
+                  <div className="text-xs text-gray-400">
+                    {formatTime(overlay.startTime)} - {formatTime(overlay.endTime)}
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => editOverlay(overlay)}
+                    className="text-xs"
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => deleteOverlay(overlay.id)}
+                    className="text-xs text-red-400 hover:text-red-300"
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Transitions List */}
+      {activeTool === "transitions" && transitions.length > 0 && (
+        <div className="px-4 py-3 bg-gray-700">
+          <h3 className="text-sm font-medium mb-3">Transitions</h3>
+          <div className="space-y-2">
+            {transitions.map(transition => (
+              <div key={transition.id} className="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
+                <div className="flex-1">
+                  <div className="text-sm font-medium">{transition.type}</div>
+                  <div className="text-xs text-gray-400">
+                    {formatTime(transition.startTime)} - {formatTime(transition.startTime + transition.duration)}
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => editTransition(transition)}
+                    className="text-xs"
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => deleteTransition(transition.id)}
+                    className="text-xs text-red-400 hover:text-red-300"
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Audio Waveform */}
       {currentAudioFile && activeTool === "audio" && (
         <div className="px-4 py-3 bg-gray-800">
@@ -562,6 +817,31 @@ export default function EditorPage() {
           duration={duration}
           onTrim={handleTrim}
           onCancel={() => setShowTrimTool(false)}
+        />
+      )}
+
+      {showTextOverlay && videoElement && (
+        <TextOverlay
+          videoElement={videoElement}
+          duration={duration}
+          onSave={handleTextOverlay}
+          onCancel={() => {
+            setShowTextOverlay(false);
+            setSelectedOverlay(null);
+          }}
+          existingOverlay={selectedOverlay}
+        />
+      )}
+
+      {showTransitions && (
+        <Transitions
+          duration={duration}
+          onSave={handleTransition}
+          onCancel={() => {
+            setShowTransitions(false);
+            setSelectedTransition(null);
+          }}
+          existingTransition={selectedTransition}
         />
       )}
 
