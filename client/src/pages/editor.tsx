@@ -94,14 +94,63 @@ export default function EditorPage() {
     { id: "audio", icon: Music, label: "Audio", action: () => setActiveTool("audio") },
   ];
 
-  // Cleanup video URLs when component unmounts or video changes
+  // Ensure video element is set when videoRef is available
   useEffect(() => {
-    return () => {
+    if (videoRef.current && currentVideoFile && !videoElement) {
+      console.log("Setting video element from useEffect");
+      setVideoElement(videoRef.current);
+    }
+  }, [videoRef.current, currentVideoFile, videoElement]);
+
+  // Debug video state changes
+  useEffect(() => {
+    console.log("Video state changed:", {
+      hasVideoFile: !!currentVideoFile,
+      hasVideoElement: !!videoElement,
+      hasVideoRef: !!videoRef.current,
+      videoUrl: videoUrl,
+      isVideoLoading: isVideoLoading
+    });
+  }, [currentVideoFile, videoElement, videoRef.current, videoUrl, isVideoLoading]);
+
+  // Set video source when currentVideoFile changes
+  useEffect(() => {
+    if (currentVideoFile && videoRef.current) {
+      console.log("Setting video source for:", currentVideoFile.name);
+      
+      // Clean up previous video URL to prevent memory leaks
       if (videoUrl) {
         URL.revokeObjectURL(videoUrl);
       }
-    };
-  }, [videoUrl]);
+      
+      const url = URL.createObjectURL(currentVideoFile);
+      setVideoUrl(url);
+      
+      // Clear existing event listeners
+      videoRef.current.onloadedmetadata = null;
+      videoRef.current.onerror = null;
+      
+      // Set new source
+      videoRef.current.src = url;
+      videoRef.current.load();
+      
+      // Set up new event listeners
+      videoRef.current.onloadedmetadata = () => {
+        console.log("Video metadata loaded from useEffect");
+        if (videoRef.current) {
+          setDuration(videoRef.current.duration);
+          setVideoElement(videoRef.current);
+          setCurrentTime(0);
+          setIsVideoLoading(false);
+        }
+      };
+      
+      videoRef.current.onerror = (e) => {
+        console.error("Video load error from useEffect:", e);
+        setIsVideoLoading(false);
+      };
+    }
+  }, [currentVideoFile]);
 
   // Sync video playback with state
   useEffect(() => {
@@ -143,44 +192,7 @@ export default function EditorPage() {
       if (type === "video") {
         setIsVideoLoading(true);
         setCurrentVideoFile(file);
-        const url = URL.createObjectURL(file);
-        setVideoUrl(url);
-        
-        console.log("Video URL created:", url);
-        
-        // Ensure videoRef is properly initialized
-        if (videoRef.current) {
-          videoRef.current.src = url;
-          videoRef.current.load();
-          
-          // Wait for video to load metadata before setting video element
-          videoRef.current.onloadedmetadata = () => {
-            console.log("Video metadata loaded, duration:", videoRef.current?.duration);
-            setVideoElement(videoRef.current);
-            if (videoRef.current) {
-              setDuration(videoRef.current.duration);
-              // Reset current time to 0
-              setCurrentTime(0);
-            }
-            setIsVideoLoading(false);
-          };
-          
-          // Handle video load errors
-          videoRef.current.onerror = (e) => {
-            console.error("Video load error:", e);
-            setIsVideoLoading(false);
-            toast({
-              title: "Error",
-              description: "Failed to load video file.",
-              variant: "destructive",
-            });
-          };
-          
-          // Add more event listeners for debugging
-          videoRef.current.onloadstart = () => console.log("Video load started");
-          videoRef.current.oncanplay = () => console.log("Video can play");
-          videoRef.current.onloadeddata = () => console.log("Video data loaded");
-        }
+        // The useEffect will handle setting the video source
         
         setShowUploadModal(false);
         toast({
@@ -198,22 +210,7 @@ export default function EditorPage() {
         // Handle image as video frame
         setIsVideoLoading(true);
         setCurrentVideoFile(file);
-        const url = URL.createObjectURL(file);
-        setVideoUrl(url);
-        
-        if (videoRef.current) {
-          videoRef.current.src = url;
-          videoRef.current.load();
-          setVideoElement(videoRef.current);
-          
-          // Set as image for 5 seconds duration
-          setTimeout(() => {
-            if (videoRef.current) {
-              videoRef.current.currentTime = 0;
-            }
-            setIsVideoLoading(false);
-          }, 100);
-        }
+        // The useEffect will handle setting the video source
         
         setShowUploadModal(false);
         toast({
@@ -475,7 +472,7 @@ export default function EditorPage() {
       </div>
 
       {/* Video Preview */}
-      {currentVideoFile && videoUrl ? (
+      {currentVideoFile ? (
         <div className="flex-1 flex items-center justify-center bg-black relative">
           {isVideoLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 z-10">
@@ -490,6 +487,7 @@ export default function EditorPage() {
             ref={videoRef}
             className="max-w-full max-h-full object-contain"
             controls={false}
+            preload="metadata"
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -499,6 +497,7 @@ export default function EditorPage() {
               }
             }}
             onLoadedMetadata={() => {
+              console.log("Video metadata loaded in preview");
               if (videoRef.current) {
                 setDuration(videoRef.current.duration);
                 setVideoElement(videoRef.current);
@@ -845,23 +844,21 @@ export default function EditorPage() {
         />
       )}
 
-      {/* Hidden video element for processing - only used when video is not displayed in main preview */}
-      {!currentVideoFile && (
-        <video 
-          ref={videoRef}
-          className="hidden"
-          onLoadedMetadata={() => {
-            if (videoRef.current) {
-              setDuration(videoRef.current.duration);
-            }
-          }}
-          onTimeUpdate={() => {
-            if (videoRef.current) {
-              setCurrentTime(videoRef.current.currentTime);
-            }
-          }}
-        />
-      )}
+      {/* Hidden video element for processing - always available */}
+      <video 
+        ref={videoRef}
+        className="hidden"
+        onLoadedMetadata={() => {
+          if (videoRef.current) {
+            setDuration(videoRef.current.duration);
+          }
+        }}
+        onTimeUpdate={() => {
+          if (videoRef.current) {
+            setCurrentTime(videoRef.current.currentTime);
+          }
+        }}
+      />
 
       {/* Bottom Actions */}
       <div className="px-4 py-4 bg-secondary">
