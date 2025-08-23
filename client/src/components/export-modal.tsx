@@ -45,7 +45,7 @@ export default function ExportModal({ show, onClose, onExport, project }: Export
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
-      <div className="bg-secondary rounded-t-3xl w-full max-h-96 overflow-y-auto animate-slide-up">
+      <div className="bg-secondary rounded-t-3xl w-full h-96 overflow-y-auto animate-slide-up">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold">Export Video</h2>

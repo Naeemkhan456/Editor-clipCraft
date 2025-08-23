@@ -60,6 +60,8 @@ export default function EditorPage() {
   const [selectedTransition, setSelectedTransition] = useState<TransitionData | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
+  const touchStartX = useRef(0);
+  const touchStartTime = useRef(0);
 
   const { data: project } = useQuery<Project>({
     queryKey: ["/api/projects", id],
@@ -156,6 +158,9 @@ export default function EditorPage() {
   useEffect(() => {
     if (videoRef.current && videoRef.current.src) {
       try {
+        // Apply speed to video element
+        videoRef.current.playbackRate = speed;
+        
         if (isPlaying) {
           const playPromise = videoRef.current.play();
           if (playPromise !== undefined) {
@@ -171,7 +176,7 @@ export default function EditorPage() {
         console.log("Playback error:", error);
       }
     }
-  }, [isPlaying]);
+  }, [isPlaying, speed]);
 
   // Sync video time with state
   useEffect(() => {
@@ -398,6 +403,62 @@ export default function EditorPage() {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+        touchStartX.current = e.touches[0].clientX;
+        touchStartTime.current = Date.now();
+    } else if (e.touches.length === 2) {
+        // Handle pinch-to-zoom
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const initialDistance = Math.hypot(
+            touch2.clientX - touch1.clientX,
+            touch2.clientY - touch1.clientY
+        );
+        // Store initial distance for zoom calculations
+    }
+};
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 1 && videoRef.current && duration > 0) {
+      e.preventDefault();
+      const touchX = e.touches[0].clientX;
+      const deltaX = touchX - touchStartX.current;
+      
+      // Calculate time change based on swipe distance
+      // 100px swipe = 5 seconds change
+      const timeChange = (deltaX / 100) * 5;
+      const newTime = Math.max(0, Math.min(duration, currentTime + timeChange));
+      
+      setCurrentTime(newTime);
+      if (videoRef.current) {
+        videoRef.current.currentTime = newTime;
+      }
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (e.changedTouches.length === 1) {
+      const touchEndX = e.changedTouches[0].clientX;
+      const deltaX = touchEndX - touchStartX.current;
+      const touchDuration = Date.now() - touchStartTime.current;
+      
+      // Calculate momentum for smooth scrolling
+      const velocity = deltaX / touchDuration;
+      const momentumDistance = velocity * 300; // 300ms momentum
+      
+      if (Math.abs(momentumDistance) > 10 && videoRef.current && duration > 0) {
+        const momentumTimeChange = (momentumDistance / 100) * 5;
+        const newTime = Math.max(0, Math.min(duration, currentTime + momentumTimeChange));
+        
+        setCurrentTime(newTime);
+        if (videoRef.current) {
+          videoRef.current.currentTime = newTime;
+        }
+      }
+    }
+  };
+
   const handleExport = async (settings: any) => {
     setShowExportModal(false);
     setIsProcessing(true);
@@ -496,6 +557,9 @@ export default function EditorPage() {
                 togglePlayback();
               }
             }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
             onLoadedMetadata={() => {
               console.log("Video metadata loaded in preview");
               if (videoRef.current) {
@@ -601,6 +665,9 @@ export default function EditorPage() {
                   seekTo(percent * duration);
                 }
               }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             ></div>
           </div>
           <span className="text-sm text-gray-400">{formatTime(duration)}</span>
@@ -631,33 +698,27 @@ export default function EditorPage() {
 
       {/* Timeline */}
       {currentVideoFile && (
-        <div className="px-4 py-3 bg-gray-800">
-          <div className="flex items-center space-x-3 mb-2">
-            <span className="text-accent">🎬</span>
-            <span className="text-sm text-gray-300">Video Timeline</span>
-          </div>
-          <div className="relative bg-gray-700 h-12 rounded-lg overflow-hidden">
-            <div className="flex h-full items-end space-x-px p-2">
-              {Array.from({ length: 50 }, (_, i) => (
-                <div
-                  key={i}
-                  className="w-1 bg-accent opacity-60"
-                  style={{
-                    height: `${Math.random() * 80 + 20}%`,
-                  }}
-                  onClick={() => {
-                    const newTime = (i / 50) * duration;
-                    seekTo(newTime);
-                  }}
-                ></div>
-              ))}
-            </div>
-            <div 
-              className="absolute top-0 bottom-0 w-0.5 bg-white"
-              style={{ left: `${(currentTime / duration) * 100}%` }}
-            ></div>
-          </div>
-        </div>
+        <Timeline
+          project={project || { 
+            id: "new-project", 
+            name: "New Project", 
+            duration, 
+            resolution: "1080p", 
+            aspectRatio: "16:9", 
+            thumbnail: null, 
+            videoClips: [], 
+            audioTracks: [], 
+            effects: [], 
+            editHistory: [], 
+            currentHistoryIndex: -1, 
+            isExporting: false, 
+            createdAt: new Date(), 
+            updatedAt: new Date() 
+          }}
+          currentTime={currentTime}
+          duration={duration}
+          onSeek={seekTo}
+        />
       )}
 
       {/* Speed Control (Active Tool) */}
@@ -774,17 +835,6 @@ export default function EditorPage() {
           />
         </div>
       )}
-
-      {/* Add Media Button */}
-      <div className="p-4">
-        <Button
-          onClick={() => setShowUploadModal(true)}
-          className="w-full bg-accent hover:bg-primary-600 bg-[#6344fd] text-white flex items-center space-x-2"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Add Media</span>
-        </Button>
-      </div>
 
       {/* Modals */}
       {showUploadModal && (

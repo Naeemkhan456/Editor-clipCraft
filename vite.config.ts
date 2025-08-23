@@ -4,6 +4,13 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
+  optimizeDeps: {
+    exclude: [], // Include all dependencies in optimization
+  },
+  worker: {
+    format: 'es', // Use ES module format for workers
+    plugins: () => [react()], // Apply React plugin to workers
+  },
   plugins: [
     react(),
     runtimeErrorOverlay(),

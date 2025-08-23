@@ -65,7 +65,7 @@ export default function FiltersPanel({ currentFilters, onFiltersChange, onClose 
         min={min}
         max={max}
         step={step}
-        value={customFilters[key] !== undefined ? customFilters[key] : defaultValue}
+        value={customFilters[key] !== undefined ? Number(customFilters[key]) : defaultValue}
         onChange={(e) => updateCustomFilter(key, parseFloat(e.target.value))}
         className="slider w-full h-2 bg-gray-600 rounded-full appearance-none cursor-pointer"
       />
@@ -86,7 +86,7 @@ export default function FiltersPanel({ currentFilters, onFiltersChange, onClose 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
-      <div className="bg-secondary rounded-t-3xl w-full max-h-[80vh] overflow-y-auto animate-slide-up">
+      <div className="bg-secondary rounded-t-3xl w-full h-96 overflow-y-auto animate-slide-up">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold">Filters & Effects</h2>
