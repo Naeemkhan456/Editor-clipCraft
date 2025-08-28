@@ -460,13 +460,118 @@ const handleTouchStart = (e: React.TouchEvent) => {
   };
 
   const handleExport = async (settings: any) => {
+    console.log("Starting export process with settings:", settings);
     setShowExportModal(false);
     setIsProcessing(true);
-    
-    // Simulate processing time
-    setTimeout(() => {
+    setProcessingProgress(0);
+    setProcessingStatus("Initializing export...");
+
+    try {
+      if (!currentVideoFile) {
+        throw new Error("No video loaded to export");
+      }
+
+      console.log("Current video file:", currentVideoFile.name, "Size:", currentVideoFile.size);
+      console.log("Export settings:", settings);
+      console.log("Current filters:", currentFilters);
+      console.log("Speed:", speed);
+      console.log("Text overlays:", textOverlays);
+      console.log("Audio tracks:", currentAudioFile);
+      console.log("Transitions:", transitions);
+
+      // Prepare filters array for videoProcessor
+      const filters: string[] = [];
+      if (currentFilters.brightness !== undefined) filters.push(`eq=brightness=${currentFilters.brightness / 100}`);
+      if (currentFilters.contrast !== undefined) filters.push(`eq=contrast=${currentFilters.contrast / 100}`);
+      if (currentFilters.saturation !== undefined) filters.push(`eq=saturation=${currentFilters.saturation / 100}`);
+      if (currentFilters.hue !== undefined) filters.push(`hue=s=${currentFilters.hue}`);
+      if (currentFilters.blur !== undefined) filters.push(`boxblur=${currentFilters.blur}`);
+      if (currentFilters.sepia !== undefined) filters.push(`colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131`);
+
+      console.log("Prepared filters:", filters);
+
+      // Call videoProcessor to process full video with all edits
+      // Filter transitions to only include types supported by videoProcessor
+      const filteredTransitions = transitions.filter(t =>
+        ['fade', 'slide', 'zoom', 'dissolve'].includes(t.type)
+      ).map(t => ({
+        type: t.type as 'fade' | 'slide' | 'zoom' | 'dissolve',
+        duration: t.duration,
+        startTime: t.startTime
+      }));
+
+      console.log("Filtered transitions:", filteredTransitions);
+
+      setProcessingStatus("Processing video...");
+      console.log("Calling videoProcessor.processVideo...");
+
+      const processedBlob = await videoProcessor.processVideo({
+        inputFile: currentVideoFile,
+        outputFormat: "mp4",
+        resolution: settings.resolution,
+        aspectRatio: settings.aspectRatio,
+        filters,
+        speed,
+        textOverlays,
+        audioTracks: currentAudioFile ? [{
+          file: currentAudioFile,
+          startTime: 0,
+          volume: 1,
+          fadeIn: 0,
+          fadeOut: 0
+        }] : [],
+        transitions: filteredTransitions,
+      }, (progress) => {
+        console.log("Processing progress:", progress);
+        setProcessingProgress(progress.percentage);
+        setProcessingStatus(progress.stage);
+      });
+
+      console.log("Video processing completed. Blob size:", processedBlob.size);
+      
+      if (processedBlob.size === 0) {
+        throw new Error("Processed video blob is empty");
+      }
+
+      // Create downloadable URL for processed video
+      setProcessingStatus("Preparing download...");
+      const exportedUrl = URL.createObjectURL(processedBlob);
+      console.log("Created object URL for download");
+
+      // Trigger download
+      const a = document.createElement("a");
+      a.href = exportedUrl;
+      a.download = `exported-video-${Date.now()}.mp4`;
+      console.log("Created download link with filename:", a.download);
+      
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      console.log("Triggered download click");
+
+      URL.revokeObjectURL(exportedUrl);
+      console.log("Revoked object URL");
+
       setIsProcessing(false);
-    }, 3000);
+      setProcessingProgress(0);
+      setProcessingStatus("Processing...");
+      console.log("Export process completed successfully");
+      
+      toast({
+        title: "Export completed",
+        description: "Your video has been exported successfully.",
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      setIsProcessing(false);
+      setProcessingProgress(0);
+      setProcessingStatus("Processing...");
+      toast({
+        title: "Export failed",
+        description: error instanceof Error ? error.message : "Failed to export video. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Check if text overlay should be visible at current time
