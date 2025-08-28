@@ -533,145 +533,156 @@ const handleTouchStart = (e: React.TouchEvent) => {
       </div>
 
       {/* Video Preview */}
-      {currentVideoFile ? (
-        <div className="flex-1 flex items-center justify-center bg-black relative">
-          {isVideoLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 z-10">
-              <div className="text-center text-white">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                <p>Loading video...</p>
+          {currentVideoFile ? (
+            <div className="flex-1 flex items-center justify-center bg-black relative">
+              {isVideoLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 z-10">
+                  <div className="text-center text-white">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                    <p>Loading video...</p>
+                  </div>
+                </div>
+              )}
+              
+              <video
+                ref={videoRef}
+                className="max-w-full max-h-full object-contain"
+                controls={false}
+                preload="metadata"
+                playsInline
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // Only toggle if video is loaded
+                  if (videoRef.current && videoRef.current.src) {
+                    togglePlayback();
+                  }
+                }}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onLoadedMetadata={() => {
+                  console.log("Video metadata loaded in preview");
+                  if (videoRef.current) {
+                    setDuration(videoRef.current.duration);
+                    setVideoElement(videoRef.current);
+                  }
+                }}
+                onTimeUpdate={() => {
+                  if (videoRef.current) {
+                    setCurrentTime(videoRef.current.currentTime);
+                  }
+                }}
+                onPlay={() => {
+                  // Update state when video starts playing
+                  if (!isPlaying) {
+                    togglePlayback();
+                  }
+                }}
+                onPause={() => {
+                  // Update state when video pauses
+                  if (isPlaying) {
+                    togglePlayback();
+                  }
+                }}
+                style={{ filter: Object.keys(currentFilters).length > 0 ? 
+                  Object.entries(currentFilters).map(([key, value]) => {
+                    switch(key) {
+                      case 'brightness': return `brightness(${value}%)`;
+                      case 'contrast': return `contrast(${value}%)`;
+                      case 'saturation': return `saturate(${value}%)`;
+                      case 'hue': return `hue-rotate(${value}deg)`;
+                      case 'blur': return `blur(${value}px)`;
+                      case 'sepia': return `sepia(${value}%)`;
+                      default: return '';
+                    }
+                  }).join(' ') : 'none'
+                }}
+              />
+              
+              {/* Text Overlays */}
+              {textOverlays.map(overlay => (
+                isOverlayVisible(overlay) && (
+                  <div
+                    key={overlay.id}
+                    className="absolute pointer-events-none select-none"
+                    style={{
+                      left: `${overlay.x}%`,
+                      top: `${overlay.y}%`,
+                      transform: 'translate(-50%, -50%)',
+                      fontSize: `${overlay.fontSize}px`,
+                      fontFamily: overlay.fontFamily,
+                      color: overlay.color,
+                      backgroundColor: overlay.backgroundColor,
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      opacity: overlay.backgroundOpacity,
+                      textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                      whiteSpace: 'nowrap',
+                      zIndex: 10
+                    }}
+                  >
+                    {overlay.text}
+                  </div>
+                )
+              ))}
+              
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                {!isPlaying && !isVideoLoading && (
+                  <div className="bg-black bg-opacity-50 rounded-full p-4">
+                    <Play className="w-12 h-12 text-white" />
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center bg-black">
+              <div className="text-center text-gray-400">
+                <Upload className="w-16 h-16 mx-auto mb-4 text-gray-500" />
+                <p className="text-lg mb-2">No video loaded</p>
+                <p className="text-sm">Tap "Add Media" to get startedsss</p>
               </div>
             </div>
           )}
-          
-          <video
-            ref={videoRef}
-            className="max-w-full max-h-full object-contain"
-            controls={false}
-            preload="metadata"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              // Only toggle if video is loaded
-              if (videoRef.current && videoRef.current.src) {
-                togglePlayback();
-              }
-            }}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onLoadedMetadata={() => {
-              console.log("Video metadata loaded in preview");
-              if (videoRef.current) {
-                setDuration(videoRef.current.duration);
-                setVideoElement(videoRef.current);
-              }
-            }}
-            onTimeUpdate={() => {
-              if (videoRef.current) {
-                setCurrentTime(videoRef.current.currentTime);
-              }
-            }}
-            onPlay={() => {
-              // Update state when video starts playing
-              if (!isPlaying) {
-                togglePlayback();
-              }
-            }}
-            onPause={() => {
-              // Update state when video pauses
-              if (isPlaying) {
-                togglePlayback();
-              }
-            }}
-            style={{ filter: Object.keys(currentFilters).length > 0 ? 
-              Object.entries(currentFilters).map(([key, value]) => {
-                switch(key) {
-                  case 'brightness': return `brightness(${value}%)`;
-                  case 'contrast': return `contrast(${value}%)`;
-                  case 'saturation': return `saturate(${value}%)`;
-                  case 'hue': return `hue-rotate(${value}deg)`;
-                  case 'blur': return `blur(${value}px)`;
-                  case 'sepia': return `sepia(${value}%)`;
-                  default: return '';
-                }
-              }).join(' ') : 'none'
-            }}
-          />
-          
-          {/* Text Overlays */}
-          {textOverlays.map(overlay => (
-            isOverlayVisible(overlay) && (
-              <div
-                key={overlay.id}
-                className="absolute pointer-events-none select-none"
-                style={{
-                  left: `${overlay.x}%`,
-                  top: `${overlay.y}%`,
-                  transform: 'translate(-50%, -50%)',
-                  fontSize: `${overlay.fontSize}px`,
-                  fontFamily: overlay.fontFamily,
-                  color: overlay.color,
-                  backgroundColor: overlay.backgroundColor,
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                  opacity: overlay.backgroundOpacity,
-                  textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-                  whiteSpace: 'nowrap',
-                  zIndex: 10
-                }}
-              >
-                {overlay.text}
-              </div>
-            )
-          ))}
-          
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            {!isPlaying && !isVideoLoading && (
-              <div className="bg-black bg-opacity-50 rounded-full p-4">
-                <Play className="w-12 h-12 text-white" />
-              </div>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="flex-1 flex items-center justify-center bg-black">
-          <div className="text-center text-gray-400">
-            <Upload className="w-16 h-16 mx-auto mb-4 text-gray-500" />
-            <p className="text-lg mb-2">No video loaded</p>
-            <p className="text-sm">Tap "Add Media" to get started</p>
-          </div>
-        </div>
-      )}
 
       {/* Playback Timeline */}
       <div className="px-4 py-3 bg-secondary">
-        <div className="flex items-center space-x-3 mb-2">
-          <span className="text-sm text-gray-400">{formatTime(currentTime)}</span>
-          <div className="flex-1 relative">
-            <div className="h-1 bg-gray-600 rounded-full">
+          <div className="flex items-center space-x-3 mb-2">
+            <button
+              onClick={togglePlayback}
+              className="text-gray-400 hover:text-white focus:outline-none"
+              aria-label={isPlaying ? "Pause" : "Play"}
+            >
+              {isPlaying ? (
+                <Pause className="w-5 h-5" />
+              ) : (
+                <Play className="w-5 h-5" />
+              )}
+            </button>
+            <span className="text-sm text-gray-400">{formatTime(currentTime)}</span>
+            <div className="flex-1 relative">
+              <div className="h-1 bg-gray-600 rounded-full">
+                <div 
+                  className="h-1 bg-accent rounded-full transition-all"
+                  style={{ width: `${(currentTime / duration) * 100}%` }}
+                ></div>
+              </div>
               <div 
-                className="h-1 bg-accent rounded-full transition-all"
-                style={{ width: `${(currentTime / duration) * 100}%` }}
+                className="absolute top-1/2 transform -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg cursor-pointer"
+                style={{ left: `${(currentTime / duration) * 100}%` }}
+                onMouseDown={(e) => {
+                  const rect = e.currentTarget.parentElement?.getBoundingClientRect();
+                  if (rect) {
+                    const percent = (e.clientX - rect.left) / rect.width;
+                    seekTo(percent * duration);
+                  }
+                }}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
               ></div>
             </div>
-            <div 
-              className="absolute top-1/2 transform -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg cursor-pointer"
-              style={{ left: `${(currentTime / duration) * 100}%` }}
-              onMouseDown={(e) => {
-                const rect = e.currentTarget.parentElement?.getBoundingClientRect();
-                if (rect) {
-                  const percent = (e.clientX - rect.left) / rect.width;
-                  seekTo(percent * duration);
-                }
-              }}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-            ></div>
           </div>
-          <span className="text-sm text-gray-400">{formatTime(duration)}</span>
-        </div>
       </div>
 
       {/* Editing Tools */}

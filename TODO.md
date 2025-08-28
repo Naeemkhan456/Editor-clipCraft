@@ -1,39 +1,45 @@
-# Video Editor Fixes - TODO List
+# Mobile App Conversion Plan
 
-## Issues to Fix:
-1. [x] Video seeking with mouse cursor not working
-2. [ ] Second video not playing
-3. [ ] Video duration not showing correctly when uploaded
-4. [ ] Timeline minutes/seconds not updating during playback
-5. [x] Speed adjustment not working
-6. [ ] Crop and trim functionality needs manual resizing
-7. [x] Filters panel needs resizing functionality and preview capability
-8. [x] Export height fixed with scrolling
-9. [x] Mobile touch gestures for timeline navigation
+## Steps to Convert Web App to Mobile App using Capacitor
 
-## Files to Modify:
-- [x] client/src/components/timeline.tsx
-- [x] client/src/pages/editor.tsx
-- [ ] client/src/components/trim-tool.tsx
-- [ ] client/src/components/crop-tool.tsx
-- [x] client/src/components/filters-panel.tsx
-- [x] client/src/components/export-modal.tsx
-- [x] client/src/hooks/use-video-editor.tsx
+1. [x] Install Capacitor dependencies
+2. [x] Initialize Capacitor in the project
+3. [x] Configure Capacitor for Android and iOS
+4. [x] Update Vite configuration for mobile compatibility
+5. [x] Build the web app
+6. [x] Sync with Capacitor
+7. [ ] Test on Android and iOS
 
-## Steps:
-1. [x] Fix video seeking functionality in timeline and video player
-2. [ ] Implement proper duration display and time formatting
-3. [x] Fix speed adjustment to work with video playback
-4. [ ] Enhance crop and trim tools for manual resizing
-5. [x] Add resizing and preview functionality to filters panel
-6. [x] Fix export modal height and scrolling
-7. [x] Add mobile touch gesture support for timeline navigation
-8. [ ] Test all functionality
+## Current Status: Ready for mobile testing
 
-## Mobile Touch Gestures Implementation:
-- [x] Added touch event handlers (touchStart, touchMove, touchEnd)
-- [x] Implemented horizontal swipe gesture for timeline navigation
-- [x] Added momentum-based scrolling for smooth navigation
-- [x] Connected touch events to video element
-- [ ] Test on mobile devices
-- [ ] Add visual feedback for touch gestures
+## Backend Deployment Solution:
+Your backend is currently using in-memory storage (MemStorage) and needs to be deployed separately from the frontend. I've created a `railway.toml` file for deploying your backend to Railway.
+
+## Next Steps:
+
+### For Backend Deployment:
+1. Create a Railway account at https://railway.app
+2. Install Railway CLI: `npm i -g @railway/cli`
+3. Deploy backend: `railway deploy`
+4. Get your backend URL from Railway dashboard
+5. Update frontend API URLs to point to your Railway backend
+
+### For Android Testing:
+1. Install Android Studio
+2. Open the `android` folder in Android Studio
+3. Build and run on an Android device/emulator
+
+### For iOS Testing:
+1. Install Xcode
+2. Open the `ios` folder in Xcode
+3. Build and run on an iOS device/simulator
+
+### Commands to run:
+- `npx cap open android` - Opens Android project
+- `npx cap open ios` - Opens iOS project
+- `npx cap run android` - Runs on Android (if connected)
+- `npx cap run ios` - Runs on iOS (if connected)
+
+## Production URLs:
+- Frontend: https://editor-clipcraft.netlify.app
+- Backend: https://editor-clipcraft-production.up.railway.app
