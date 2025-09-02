@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Home, Folder, Wand2, User } from "lucide-react";
+import { Home, Folder, Wand2, User, Settings } from "lucide-react";
 import { useLocation } from "wouter";
 import TemplateModal from "@/components/template-modal";
 import ProfileModal from "@/components/profile-modal";
+import SettingsModal from "@/components/settings-modal";
 
 interface MobileNavProps {
   onNavigate: (path: string) => void;
@@ -12,6 +13,7 @@ export default function MobileNav({ onNavigate }: MobileNavProps) {
   const [location] = useLocation();
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handleTemplateSelect = (template: string) => {
     console.log("Selected template:", template);
@@ -28,6 +30,8 @@ export default function MobileNav({ onNavigate }: MobileNavProps) {
       setTemplatesOpen(true);
     } else if (path === "/profile") {
       setProfileOpen(true);
+    } else if (path === "/settings") {
+      setSettingsOpen(true);
     } else {
       onNavigate(path);
     }
@@ -38,6 +42,7 @@ export default function MobileNav({ onNavigate }: MobileNavProps) {
     { icon: Folder, label: "Projects", path: "/projects" },
     { icon: Wand2, label: "Templates", path: "/templates" },
     { icon: User, label: "Profile", path: "/profile" },
+    { icon: Settings, label: "Settings", path: "/settings" },
   ];
 
   return (
@@ -66,10 +71,13 @@ export default function MobileNav({ onNavigate }: MobileNavProps) {
         onOpenChange={setTemplatesOpen} 
         onTemplateSelect={handleTemplateSelect}
       />
-      <ProfileModal 
-        open={profileOpen} 
-        onOpenChange={setProfileOpen} 
-        onProfileUpdate={handleProfileUpdate}
+      <ProfileModal
+        show={profileOpen}
+        onClose={() => setProfileOpen(false)}
+      />
+      <SettingsModal
+        show={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
       />
     </>
   );

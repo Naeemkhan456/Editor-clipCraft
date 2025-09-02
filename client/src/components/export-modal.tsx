@@ -178,7 +178,12 @@ export default function ExportModal({ show, onClose, onExport, currentVideoFile 
                       <Label htmlFor="format">Format</Label>
                       <Select
                         value={exportOptions.format}
-                        onValueChange={(value) => setExportOptions(prev => ({ ...prev, format: value }))}
+                        onValueChange={(value) =>
+                          setExportOptions((prev) => ({
+                            ...prev,
+                            format: value,
+                          }))
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -196,7 +201,12 @@ export default function ExportModal({ show, onClose, onExport, currentVideoFile 
                       <Label htmlFor="resolution">Resolution</Label>
                       <Select
                         value={exportOptions.resolution}
-                        onValueChange={(value) => setExportOptions(prev => ({ ...prev, resolution: value }))}
+                        onValueChange={(value) =>
+                          setExportOptions((prev) => ({
+                            ...prev,
+                            resolution: value,
+                          }))
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -204,7 +214,9 @@ export default function ExportModal({ show, onClose, onExport, currentVideoFile 
                         <SelectContent>
                           <SelectItem value="480p">480p (854x480)</SelectItem>
                           <SelectItem value="720p">720p (1280x720)</SelectItem>
-                          <SelectItem value="1080p">1080p (1920x1080)</SelectItem>
+                          <SelectItem value="1080p">
+                            1080p (1920x1080)
+                          </SelectItem>
                           <SelectItem value="2K">2K (2560x1440)</SelectItem>
                           <SelectItem value="4K">4K (3840x2160)</SelectItem>
                         </SelectContent>
@@ -213,14 +225,21 @@ export default function ExportModal({ show, onClose, onExport, currentVideoFile 
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="quality">Quality: {exportOptions.quality}%</Label>
+                    <Label htmlFor="quality">
+                      Quality: {exportOptions.quality}%
+                    </Label>
                     <Slider
                       value={[exportOptions.quality]}
-                      onValueChange={(value) => setExportOptions(prev => ({ ...prev, quality: value[0] }))}
+                      onValueChange={(value) =>
+                        setExportOptions((prev) => ({
+                          ...prev,
+                          quality: value[0],
+                        }))
+                      }
                       max={100}
                       min={1}
                       step={1}
-                      className="w-full"
+                      className="w-full [&>.relative>.bg-primary]:bg-[#6344fd] [&>.relative>.absolute]:bg-[#6344fd]"
                     />
                   </div>
 
@@ -230,7 +249,12 @@ export default function ExportModal({ show, onClose, onExport, currentVideoFile 
                         type="checkbox"
                         id="includeAudio"
                         checked={exportOptions.includeAudio}
-                        onChange={(e) => setExportOptions(prev => ({ ...prev, includeAudio: e.target.checked }))}
+                        onChange={(e) =>
+                          setExportOptions((prev) => ({
+                            ...prev,
+                            includeAudio: e.target.checked,
+                          }))
+                        }
                         className="rounded"
                       />
                       <Label htmlFor="includeAudio">Include Audio</Label>
@@ -241,7 +265,12 @@ export default function ExportModal({ show, onClose, onExport, currentVideoFile 
                         type="checkbox"
                         id="watermark"
                         checked={exportOptions.watermark}
-                        onChange={(e) => setExportOptions(prev => ({ ...prev, watermark: e.target.checked }))}
+                        onChange={(e) =>
+                          setExportOptions((prev) => ({
+                            ...prev,
+                            watermark: e.target.checked,
+                          }))
+                        }
                         className="rounded"
                       />
                       <Label htmlFor="watermark">Add Watermark</Label>
@@ -254,7 +283,12 @@ export default function ExportModal({ show, onClose, onExport, currentVideoFile 
                       <Input
                         id="watermarkText"
                         value={exportOptions.watermarkText}
-                        onChange={(e) => setExportOptions(prev => ({ ...prev, watermarkText: e.target.value }))}
+                        onChange={(e) =>
+                          setExportOptions((prev) => ({
+                            ...prev,
+                            watermarkText: e.target.value,
+                          }))
+                        }
                         placeholder="Enter watermark text"
                       />
                     </div>
@@ -265,11 +299,11 @@ export default function ExportModal({ show, onClose, onExport, currentVideoFile 
               {/* Export Button */}
               <Button
                 onClick={handleExport}
-                className="w-full"
+                className="w-full hover:bg-[#6344fd]/30 bg-[#6344fd] transition-all "
                 size="lg"
                 disabled={!currentVideoFile}
               >
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="w-4 h-4 mr-2 bg-[#6344fd]/30 hover:bg-[#6344fd]/40 transition-all" />
                 Start Export
               </Button>
             </>
@@ -305,22 +339,25 @@ export default function ExportModal({ show, onClose, onExport, currentVideoFile 
                     <div className="text-sm text-muted-foreground">
                       {exportProgress.stage}
                     </div>
-                    
+
                     {/* Time estimates */}
                     {exportProgress.currentTime && exportProgress.totalTime && (
                       <div className="text-xs text-muted-foreground">
                         {Math.round(exportProgress.currentTime / 1000)}s elapsed
-                        {exportProgress.totalTime && ` • ~${Math.round(exportProgress.totalTime / 1000)}s total`}
+                        {exportProgress.totalTime &&
+                          ` • ~${Math.round(
+                            exportProgress.totalTime / 1000
+                          )}s total`}
                       </div>
                     )}
                   </div>
 
                   {/* Cancel Button */}
-                  <div className="text-center">
+                  <div className="text-center ">
                     <Button
                       variant="outline"
                       onClick={resetExport}
-                      className="mt-4"
+                      className="mt-4 bg-[#6344fd]/30 hover:bg-[#6344fd]/40 transition-all"
                     >
                       Cancel Export
                     </Button>
@@ -345,7 +382,8 @@ export default function ExportModal({ show, onClose, onExport, currentVideoFile 
               <CardContent className="space-y-4">
                 <div className="text-center space-y-2">
                   <div className="text-sm text-green-700">
-                    File size: {(exportedBlob.size / (1024 * 1024)).toFixed(2)} MB
+                    File size: {(exportedBlob.size / (1024 * 1024)).toFixed(2)}{" "}
+                    MB
                   </div>
                   <div className="text-sm text-green-700">
                     Format: {exportOptions.format.toUpperCase()}
@@ -355,7 +393,7 @@ export default function ExportModal({ show, onClose, onExport, currentVideoFile 
                 <div className="flex space-x-3">
                   <Button
                     onClick={downloadExportedVideo}
-                    className="flex-1"
+                    className="flex-1 bg-[#6344fd]/30 hover:bg-[#6344fd]/40 transition-all"
                     size="lg"
                   >
                     <Download className="w-4 h-4 mr-2" />
@@ -364,7 +402,7 @@ export default function ExportModal({ show, onClose, onExport, currentVideoFile 
                   <Button
                     variant="outline"
                     onClick={resetExport}
-                    className="flex-1"
+                    className="flex-1 bg-[#6344fd]/30 hover:bg-[#6344fd]/40 transition-all"
                   >
                     Export Another
                   </Button>
@@ -393,15 +431,12 @@ export default function ExportModal({ show, onClose, onExport, currentVideoFile 
                 <div className="flex space-x-3">
                   <Button
                     onClick={resetExport}
-                    className="flex-1"
+                    className="flex-1 bg-[#6344fd]/30 hover:bg-[#6344fd]/40 transition-all"
                     variant="outline"
                   >
                     Try Again
                   </Button>
-                  <Button
-                    onClick={onClose}
-                    className="flex-1"
-                  >
+                  <Button onClick={onClose} className="flex-1 bg-[#6344fd]/30 hover:bg-[#6344fd]/40 transition-all">
                     Close
                   </Button>
                 </div>
