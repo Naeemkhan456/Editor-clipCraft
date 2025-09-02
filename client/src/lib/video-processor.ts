@@ -1,5 +1,7 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { toBlobURL } from '@ffmpeg/util';
 
+// Interfaces
 export interface VideoProcessingOptions {
   inputFile: File;
   outputFormat: string;
@@ -45,29 +47,150 @@ export interface ProcessingProgress {
 }
 
 export class VideoProcessor {
+  private static instance: VideoProcessor | null = null;
   private ffmpeg: FFmpeg | null = null;
   private isLoaded = false;
+  public isInitialized = false;
 
-  async initialize() {
+  private constructor() {}
+
+  public static getInstance(): VideoProcessor {
+    if (!VideoProcessor.instance) {
+      VideoProcessor.instance = new VideoProcessor();
+    }
+    return VideoProcessor.instance;
+  }
+
+  public async initialize(): Promise<void> {
+    if (this.isLoaded && this.ffmpeg) {
+      console.log('FFmpeg already loaded');
+      return;
+    }
+
     try {
+      console.log('Starting FFmpeg initialization...');
       this.ffmpeg = new FFmpeg();
-      
-      // Load FFmpeg core
-      await this.ffmpeg.load();
-      
+
+      if (!this.ffmpeg) {
+        throw new Error('FFmpeg instance is null');
+      }
+
+      // Try blob URLs first (more reliable)
+      const baseURL = window.location.origin + '/ffmpeg';
+      const coreURL = `${baseURL}/ffmpeg-core.js`;
+      const wasmURL = `${baseURL}/ffmpeg-core.wasm`;
+
+      console.log('Attempting to load FFmpeg with blob URLs:', { coreURL, wasmURL });
+
+      try {
+        // Fetch and create blob URLs
+        const [coreResponse, wasmResponse] = await Promise.all([
+          fetch(coreURL),
+          fetch(wasmURL)
+        ]);
+
+        if (!coreResponse.ok) {
+          throw new Error(`Failed to fetch core file: ${coreResponse.status} ${coreResponse.statusText}`);
+        }
+        if (!wasmResponse.ok) {
+          throw new Error(`Failed to fetch wasm file: ${wasmResponse.status} ${wasmResponse.statusText}`);
+        }
+
+        const [coreBlob, wasmBlob] = await Promise.all([
+          coreResponse.blob(),
+          wasmResponse.blob()
+        ]);
+
+        const coreBlobURL = URL.createObjectURL(coreBlob);
+        const wasmBlobURL = URL.createObjectURL(wasmBlob);
+
+        console.log('Created blob URLs for FFmpeg loading');
+
+        await Promise.race([
+          this.ffmpeg.load({ coreURL: coreBlobURL, wasmURL: wasmBlobURL }),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('FFmpeg blob URL initialization timed out')), 30000)
+          )
+        ]);
+
+        // Clean up blob URLs
+        URL.revokeObjectURL(coreBlobURL);
+        URL.revokeObjectURL(wasmBlobURL);
+
+        console.log('FFmpeg loaded successfully with blob URLs');
+      } catch (blobError) {
+        console.warn('Blob URL loading failed, trying direct URLs as fallback:', blobError);
+
+        // Fallback: Try using direct URLs
+        try {
+          await Promise.race([
+            this.ffmpeg.load({ coreURL, wasmURL }),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('FFmpeg direct URL initialization timed out')), 30000)
+            )
+          ]);
+          console.log('FFmpeg loaded successfully with direct URLs');
+        } catch (directError) {
+          console.error('Direct URL loading also failed:', directError);
+          throw new Error(`All FFmpeg loading methods failed. Blob URL error: ${blobError}. Direct URL error: ${directError}`);
+        }
+      }
+
       this.isLoaded = true;
-      console.log('FFmpeg loaded successfully');
+      this.isInitialized = true;
+      console.log('FFmpeg initialization completed successfully');
     } catch (error) {
-      console.error('Failed to load FFmpeg:', error);
+      this.isLoaded = false;
+      this.isInitialized = false;
+      this.ffmpeg = null;
+      console.error('FFmpeg initialization failed:', error);
       throw error;
     }
   }
 
-  async processVideo(
+  private async safeReadFile(outputName: string): Promise<Uint8Array> {
+    if (!this.ffmpeg) {
+      throw new Error('FFmpeg not initialized');
+    }
+    
+    const outputData = await this.ffmpeg.readFile(outputName);
+    
+    if (typeof outputData === 'string') {
+      return new TextEncoder().encode(outputData);
+    }
+    
+    if (outputData instanceof Uint8Array) {
+      return outputData;
+    }
+    
+    // For any array buffer-like object
+    if (outputData && typeof outputData === 'object' && 'byteLength' in outputData) {
+      return new Uint8Array(outputData as ArrayBufferLike);
+    }
+    
+    throw new Error('Unsupported FFmpeg output type');
+  }
+
+  private createBlobFromUint8Array(data: Uint8Array, type: string): Blob {
+    // Create a safe ArrayBuffer copy to avoid SharedArrayBuffer issues
+    const safeArrayBuffer = new ArrayBuffer(data.length);
+    const safeUint8Array = new Uint8Array(safeArrayBuffer);
+    safeUint8Array.set(data);
+    
+    return new Blob([safeUint8Array], { type });
+  }
+
+  private stringToUint8Array(str: string): Uint8Array {
+    return new TextEncoder().encode(str);
+  }
+
+  public async processVideo(
     options: VideoProcessingOptions,
     onProgress?: (progress: ProcessingProgress) => void
   ): Promise<Blob> {
-    if (!this.isLoaded) {
+    console.log('Starting video processing...');
+    
+    if (!this.isLoaded || !this.ffmpeg) {
       await this.initialize();
     }
 
@@ -76,31 +199,29 @@ export class VideoProcessor {
     }
 
     try {
-      const { inputFile, outputFormat, resolution, aspectRatio, filters, speed, volume, textOverlays, audioTracks, transitions } = options;
+      const { 
+        inputFile, 
+        outputFormat = 'mp4', 
+        resolution, 
+        filters, 
+        speed, 
+        volume, 
+        textOverlays, 
+        audioTracks, 
+        transitions 
+      } = options;
       
-      // Write input file to FFmpeg file system
-      const inputName = 'input.' + inputFile.name.split('.').pop();
+      const inputName = 'input.' + (inputFile.name.split('.').pop() || 'mp4');
       const outputName = `output.${outputFormat}`;
       
       const fileData = new Uint8Array(await inputFile.arrayBuffer());
       await this.ffmpeg.writeFile(inputName, fileData);
-
-      // Build FFmpeg command
-      let command = ['-i', inputName];
       
-      // Add audio tracks if specified
-      if (audioTracks && audioTracks.length > 0) {
-        for (let i = 0; i < audioTracks.length; i++) {
-          const audioTrack = audioTracks[i];
-          const audioData = new Uint8Array(await audioTrack.file.arrayBuffer());
-          const audioName = `audio${i}.${audioTrack.file.name.split('.').pop()}`;
-          await this.ffmpeg.writeFile(audioName, audioData);
-          command.push('-i', audioName);
-        }
-      }
+      // Base command with input file
+      const command = ['-i', inputName];
       
-      // Apply filters
-      const filterOptions = [];
+      // Add filters if specified
+      const filterOptions: string[] = [];
       
       if (speed && speed !== 1) {
         filterOptions.push(`setpts=${1/speed}*PTS`);
@@ -110,18 +231,16 @@ export class VideoProcessor {
         filterOptions.push(...filters);
       }
       
-      // Apply text overlays
       if (textOverlays && textOverlays.length > 0) {
-        const textFilters = textOverlays.map((overlay, index) => {
+        const textFilters = textOverlays.map(overlay => {
           const fontFile = overlay.fontFamily || 'Arial';
           return `drawtext=text='${overlay.text}':fontfile=${fontFile}:fontsize=${overlay.fontSize}:fontcolor=${overlay.color}:x=${overlay.x}:y=${overlay.y}:enable='between(t,${overlay.startTime},${overlay.endTime})'`;
         });
         filterOptions.push(...textFilters);
       }
       
-      // Apply transitions
       if (transitions && transitions.length > 0) {
-        const transitionFilters = transitions.map((transition, index) => {
+        const transitionFilters = transitions.map(transition => {
           switch (transition.type) {
             case 'fade':
               return `fade=t=in:st=${transition.startTime}:d=${transition.duration}`;
@@ -142,26 +261,33 @@ export class VideoProcessor {
         command.push('-vf', filterOptions.join(','));
       }
       
-      // Audio processing
-      if (volume && volume !== 1) {
-        command.push('-af', `volume=${volume}`);
-      }
-      
-      // Mix multiple audio tracks
+      // Add audio processing
       if (audioTracks && audioTracks.length > 0) {
+        for (let i = 0; i < audioTracks.length; i++) {
+          const audioTrack = audioTracks[i];
+          const audioData = new Uint8Array(await audioTrack.file.arrayBuffer());
+          const audioName = `audio${i}.${audioTrack.file.name.split('.').pop() || 'mp3'}`;
+          await this.ffmpeg.writeFile(audioName, audioData);
+          command.push('-i', audioName);
+        }
+
+        // Mix multiple audio tracks with volume adjustments
         const audioMix = audioTracks.map((_, index) => `[${index + 1}:a]`).join('');
         const volumeAdjustments = audioTracks.map(track => `volume=${track.volume}`).join(',');
         command.push('-filter_complex', `${audioMix}amix=inputs=${audioTracks.length}:duration=longest,${volumeAdjustments}[a]`);
         command.push('-map', '0:v');
         command.push('-map', '[a]');
+      } else if (volume && volume !== 1) {
+        command.push('-af', `volume=${volume}`);
       }
       
-      // Resolution and aspect ratio
+      // Set resolution if specified
       if (resolution) {
         const resolutionMap: Record<string, string> = {
           '480p': '854x480',
           '720p': '1280x720',
           '1080p': '1920x1080',
+          '2K': '2560x1440',
           '4K': '3840x2160'
         };
         
@@ -171,39 +297,43 @@ export class VideoProcessor {
       }
       
       // Output options
-      command.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '23');
-      command.push(outputName);
+      command.push(
+        '-c:v', 'libx264',
+        '-preset', 'fast',
+        '-crf', '23',
+        outputName
+      );
 
       // Execute FFmpeg command
       await this.ffmpeg.exec(command);
       
       // Read output file
-      const outputData = await this.ffmpeg.readFile(outputName);
+      const outputData = await this.safeReadFile(outputName);
       
-      // Clean up files
+      // Clean up
       await this.ffmpeg.deleteFile(inputName);
       await this.ffmpeg.deleteFile(outputName);
       if (audioTracks) {
         for (let i = 0; i < audioTracks.length; i++) {
-          await this.ffmpeg.deleteFile(`audio${i}.${audioTracks[i].file.name.split('.').pop()}`);
+          await this.ffmpeg.deleteFile(`audio${i}.${audioTracks[i].file.name.split('.').pop() || 'mp3'}`);
         }
       }
       
-      return new Blob([outputData], { type: `video/${outputFormat}` });
+      return this.createBlobFromUint8Array(outputData, `video/${outputFormat}`);
     } catch (error) {
       console.error('Video processing failed:', error);
       throw new Error(`Video processing failed: ${error}`);
     }
   }
 
-  async cropVideo(
+  public async cropVideo(
     inputFile: File,
     x: number,
     y: number,
     width: number,
     height: number
   ): Promise<Blob> {
-    if (!this.isLoaded) {
+    if (!this.isLoaded || !this.ffmpeg) {
       await this.initialize();
     }
 
@@ -212,7 +342,7 @@ export class VideoProcessor {
     }
 
     try {
-      const inputName = 'input.' + inputFile.name.split('.').pop();
+      const inputName = 'input.' + (inputFile.name.split('.').pop() || 'mp4');
       const outputName = 'cropped.mp4';
       
       const fileData = new Uint8Array(await inputFile.arrayBuffer());
@@ -228,25 +358,26 @@ export class VideoProcessor {
 
       await this.ffmpeg.exec(command);
       
-      const outputData = await this.ffmpeg.readFile(outputName);
+      // Read output file
+      const outputData = await this.safeReadFile(outputName);
       
       // Clean up
       await this.ffmpeg.deleteFile(inputName);
       await this.ffmpeg.deleteFile(outputName);
       
-      return new Blob([outputData], { type: 'video/mp4' });
+      return this.createBlobFromUint8Array(outputData, 'video/mp4');
     } catch (error) {
       console.error('Video cropping failed:', error);
       throw new Error(`Video cropping failed: ${error}`);
     }
   }
 
-  async trimVideo(
+  public async trimVideo(
     inputFile: File,
     startTime: number,
     endTime: number
   ): Promise<Blob> {
-    if (!this.isLoaded) {
+    if (!this.isLoaded || !this.ffmpeg) {
       await this.initialize();
     }
 
@@ -255,7 +386,7 @@ export class VideoProcessor {
     }
 
     try {
-      const inputName = 'input.' + inputFile.name.split('.').pop();
+      const inputName = 'input.' + (inputFile.name.split('.').pop() || 'mp4');
       const outputName = 'trimmed.mp4';
       
       const fileData = new Uint8Array(await inputFile.arrayBuffer());
@@ -274,20 +405,21 @@ export class VideoProcessor {
 
       await this.ffmpeg.exec(command);
       
-      const outputData = await this.ffmpeg.readFile(outputName);
+      // Read output file
+      const outputData = await this.safeReadFile(outputName);
       
       // Clean up
       await this.ffmpeg.deleteFile(inputName);
       await this.ffmpeg.deleteFile(outputName);
       
-      return new Blob([outputData], { type: 'video/mp4' });
+      return this.createBlobFromUint8Array(outputData, 'video/mp4');
     } catch (error) {
       console.error('Video trimming failed:', error);
       throw new Error(`Video trimming failed: ${error}`);
     }
   }
 
-  async addTextOverlay(
+  public async addTextOverlay(
     inputFile: File,
     text: string,
     startTime: number,
@@ -297,7 +429,7 @@ export class VideoProcessor {
     fontSize: number = 24,
     color: string = 'white'
   ): Promise<Blob> {
-    if (!this.isLoaded) {
+    if (!this.isLoaded || !this.ffmpeg) {
       await this.initialize();
     }
 
@@ -306,7 +438,7 @@ export class VideoProcessor {
     }
 
     try {
-      const inputName = 'input.' + inputFile.name.split('.').pop();
+      const inputName = 'input.' + (inputFile.name.split('.').pop() || 'mp4');
       const outputName = 'text-overlay.mp4';
       
       const fileData = new Uint8Array(await inputFile.arrayBuffer());
@@ -322,21 +454,22 @@ export class VideoProcessor {
 
       await this.ffmpeg.exec(command);
       
-      const outputData = await this.ffmpeg.readFile(outputName);
+      // Read output file
+      const outputData = await this.safeReadFile(outputName);
       
       // Clean up
       await this.ffmpeg.deleteFile(inputName);
       await this.ffmpeg.deleteFile(outputName);
       
-      return new Blob([outputData], { type: 'video/mp4' });
+      return this.createBlobFromUint8Array(outputData, 'video/mp4');
     } catch (error) {
       console.error('Text overlay failed:', error);
       throw new Error(`Text overlay failed: ${error}`);
     }
   }
 
-  async mergeVideos(videoFiles: File[]): Promise<Blob> {
-    if (!this.isLoaded) {
+  public async extractAudio(videoFile: File): Promise<Blob> {
+    if (!this.isLoaded || !this.ffmpeg) {
       await this.initialize();
     }
 
@@ -345,56 +478,7 @@ export class VideoProcessor {
     }
 
     try {
-      // Write all video files
-      const inputNames: string[] = [];
-      for (let i = 0; i < videoFiles.length; i++) {
-        const inputName = `input${i}.${videoFiles[i].name.split('.').pop()}`;
-        const fileData = new Uint8Array(await videoFiles[i].arrayBuffer());
-        await this.ffmpeg.writeFile(inputName, fileData);
-        inputNames.push(inputName);
-      }
-
-      const outputName = 'merged.mp4';
-      
-      // Create concat file
-      const concatContent = inputNames.map(name => `file '${name}'`).join('\n');
-      await this.ffmpeg.writeFile('concat.txt', new TextEncoder().encode(concatContent));
-
-      const command = [
-        '-f', 'concat',
-        '-safe', '0',
-        '-i', 'concat.txt',
-        '-c', 'copy',
-        outputName
-      ];
-
-      await this.ffmpeg.exec(command);
-      
-      const outputData = await this.ffmpeg.readFile(outputName);
-      
-      // Clean up
-      inputNames.forEach(name => this.ffmpeg!.deleteFile(name));
-      await this.ffmpeg.deleteFile('concat.txt');
-      await this.ffmpeg.deleteFile(outputName);
-      
-      return new Blob([outputData], { type: 'video/mp4' });
-    } catch (error) {
-      console.error('Video merging failed:', error);
-      throw new Error(`Video merging failed: ${error}`);
-    }
-  }
-
-  async extractAudio(videoFile: File): Promise<Blob> {
-    if (!this.isLoaded) {
-      await this.initialize();
-    }
-
-    if (!this.ffmpeg) {
-      throw new Error('FFmpeg not initialized');
-    }
-
-    try {
-      const inputName = 'input.' + videoFile.name.split('.').pop();
+      const inputName = 'input.' + (videoFile.name.split('.').pop() || 'mp4');
       const outputName = 'audio.mp3';
       
       const fileData = new Uint8Array(await videoFile.arrayBuffer());
@@ -410,24 +494,25 @@ export class VideoProcessor {
 
       await this.ffmpeg.exec(command);
       
-      const outputData = await this.ffmpeg.readFile(outputName);
+      // Read output file
+      const outputData = await this.safeReadFile(outputName);
       
       // Clean up
       await this.ffmpeg.deleteFile(inputName);
       await this.ffmpeg.deleteFile(outputName);
       
-      return new Blob([outputData], { type: 'audio/mp3' });
+      return this.createBlobFromUint8Array(outputData, 'audio/mp3');
     } catch (error) {
       console.error('Audio extraction failed:', error);
       throw new Error(`Audio extraction failed: ${error}`);
     }
   }
 
-  async applyFilters(
+  public async applyFilters(
     inputFile: File,
     filters: string[]
   ): Promise<Blob> {
-    if (!this.isLoaded) {
+    if (!this.isLoaded || !this.ffmpeg) {
       await this.initialize();
     }
 
@@ -436,7 +521,7 @@ export class VideoProcessor {
     }
 
     try {
-      const inputName = 'input.' + inputFile.name.split('.').pop();
+      const inputName = 'input.' + (inputFile.name.split('.').pop() || 'mp4');
       const outputName = 'filtered.mp4';
       
       const fileData = new Uint8Array(await inputFile.arrayBuffer());
@@ -452,69 +537,20 @@ export class VideoProcessor {
 
       await this.ffmpeg.exec(command);
       
-      const outputData = await this.ffmpeg.readFile(outputName);
+      // Read output file
+      const outputData = await this.safeReadFile(outputName);
       
       // Clean up
       await this.ffmpeg.deleteFile(inputName);
       await this.ffmpeg.deleteFile(outputName);
       
-      return new Blob([outputData], { type: 'video/mp4' });
+      return this.createBlobFromUint8Array(outputData, 'video/mp4');
     } catch (error) {
       console.error('Filter application failed:', error);
       throw new Error(`Filter application failed: ${error}`);
     }
   }
-
-  async getVideoInfo(videoFile: File): Promise<{
-    duration: number;
-    width: number;
-    height: number;
-    fps: number;
-    bitrate: number;
-    codec: string;
-  }> {
-    if (!this.isLoaded) {
-      await this.initialize();
-    }
-
-    if (!this.ffmpeg) {
-      throw new Error('FFmpeg not initialized');
-    }
-
-    try {
-      const inputName = 'input.' + videoFile.name.split('.').pop();
-      const fileData = new Uint8Array(await videoFile.arrayBuffer());
-      await this.ffmpeg.writeFile(inputName, fileData);
-
-      // This is a simplified approach - in a real implementation,
-      // you'd use FFprobe or parse the FFmpeg output
-      const command = [
-        '-i', inputName,
-        '-f', 'null',
-        '-'
-      ];
-
-      await this.ffmpeg.exec(command);
-      
-      // Clean up
-      await this.ffmpeg.deleteFile(inputName);
-      
-      // Return default values for now
-      // In a real implementation, you'd parse the FFmpeg output
-      return {
-        duration: 0,
-        width: 1920,
-        height: 1080,
-        fps: 30,
-        bitrate: 5000,
-        codec: 'h264'
-      };
-    } catch (error) {
-      console.error('Video info extraction failed:', error);
-      throw new Error(`Video info extraction failed: ${error}`);
-    }
-  }
 }
 
 // Export a singleton instance
-export const videoProcessor = new VideoProcessor();
+export const videoProcessor = VideoProcessor.getInstance();

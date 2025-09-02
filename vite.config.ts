@@ -5,7 +5,7 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
 export default defineConfig({
   optimizeDeps: {
-    exclude: [], // Include all dependencies in optimization
+    exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util'], // Exclude FFmpeg dependencies from optimization
   },
   worker: {
     format: 'es', // Use ES module format for workers
@@ -40,5 +40,10 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    headers: {
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Opener-Policy': 'same-origin',
+    },
   },
+  publicDir: 'client/public',
 });

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
-import { ArrowLeft, Undo, Redo, Play, Pause, SkipBack, SkipForward, Plus, Trash2, Upload, Scissors, Crop, Palette, Type, Music, Settings, LayoutTemplate, User, Zap } from "lucide-react";
+import { ArrowLeft, Undo, Redo, Play, Pause, SkipBack, SkipForward, Plus, Trash2, Upload, Scissors, Crop, Palette, Type, Music, Settings, LayoutTemplate, User, Zap, Download, Save, Share, X } from "lucide-react";
 
 import VideoPlayer from "@/components/video-player";
 import Timeline from "@/components/timeline";
@@ -20,9 +20,15 @@ import Transitions, { type TransitionData } from "@/components/transitions";
 import { Button } from "@/components/ui/button";
 import { useVideoEditor } from "@/hooks/use-video-editor";
 import { useToast } from "@/hooks/use-toast";
-import { videoProcessor } from "@/lib/video-processor";
+import { videoProcessor } from "@/lib/video-processor-fixed";
+import BodyTools from "@/components/body-tools";
 import { predefinedFilters, type FilterOptions } from "@/lib/filters";
 import type { Project } from "@shared/schema";
+
+type ProcessingProgress = {
+  percentage: number;
+  stage?: string;
+};
 
 export default function EditorPage() {
   const { id } = useParams();
@@ -44,6 +50,7 @@ export default function EditorPage() {
   const [showTrimTool, setShowTrimTool] = useState(false);
   const [showTextOverlay, setShowTextOverlay] = useState(false);
   const [showTransitions, setShowTransitions] = useState(false);
+  const [showBodyTools, setShowBodyTools] = useState(false);
   
   // Media states
   const [currentVideoFile, setCurrentVideoFile] = useState<File | null>(null);
@@ -83,9 +90,6 @@ export default function EditorPage() {
     redo,
   } = useVideoEditor(project);
 
-  // Always render the full component structure to maintain hook consistency
-  // The project data will be handled within the main render
-
   const tools = [
     { id: "trim", icon: Scissors, label: "Trim", action: () => setShowTrimTool(true) },
     { id: "speed", icon: SkipForward, label: "Speed", action: () => setActiveTool("speed") },
@@ -93,8 +97,42 @@ export default function EditorPage() {
     { id: "filters", icon: Palette, label: "Filters", action: () => setShowFiltersPanel(true) },
     { id: "text", icon: Type, label: "Text", action: () => setShowTextOverlay(true) },
     { id: "transitions", icon: Zap, label: "Transitions", action: () => setShowTransitions(true) },
+    { id: "body", icon: User, label: "Body", action: () => setShowBodyTools(true) },
     { id: "audio", icon: Music, label: "Audio", action: () => setActiveTool("audio") },
+    { id: "test", icon: Zap, label: "Test FFmpeg", action: () => testFFmpegBasic() },
   ];
+
+  // Add a simple FFmpeg test function
+  const testFFmpegBasic = async () => {
+    try {
+      console.log("Testing basic FFmpeg functionality...");
+      await videoProcessor.initialize();
+      console.log("✅ FFmpeg initialized successfully!");
+      
+      // Test basic file operations
+      const testData = new Uint8Array([0, 1, 2, 3, 4, 5]);
+      await videoProcessor.ffmpeg?.writeFile('test.txt', testData);
+      console.log("✅ File write test passed!");
+      
+      const readData = await videoProcessor.ffmpeg?.readFile('test.txt');
+      console.log("✅ File read test passed!", readData);
+      
+      await videoProcessor.ffmpeg?.deleteFile('test.txt');
+      console.log("✅ File delete test passed!");
+      
+      toast({
+        title: "✅ FFmpeg Test Passed",
+        description: "All basic FFmpeg operations are working correctly!",
+      });
+    } catch (error) {
+      console.error("❌ FFmpeg test failed:", error);
+      toast({
+        title: "❌ FFmpeg Test Failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Ensure video element is set when videoRef is available
   useEffect(() => {
@@ -254,15 +292,10 @@ export default function EditorPage() {
       const trimmedFile = new File([trimmedBlob], "trimmed.mp4", { type: "video/mp4" });
       setCurrentVideoFile(trimmedFile);
       
-      const url = URL.createObjectURL(trimmedFile);
+      const url = URL.createObjectURL(trimmedBlob);
       if (videoRef.current) {
         videoRef.current.src = url;
       }
-
-      // toast({
-      //   title: "Video trimmed",
-      //   description: "Video has been trimmed successfully.",
-      // });
     } catch (error) {
       toast({
         title: "Error",
@@ -306,11 +339,6 @@ export default function EditorPage() {
         
         const url = URL.createObjectURL(croppedBlob);
         videoRef.current!.src = url;
-
-        // toast({
-        //   title: "Video cropped",
-        //   description: "Video has been cropped successfully.",
-        // });
       }
     } catch (error) {
       toast({
@@ -352,10 +380,6 @@ export default function EditorPage() {
   // Apply speed change - simplified for immediate feedback
   const handleSpeedChange = (newSpeed: number) => {
     setSpeed(newSpeed);
-    // toast({
-    //   title: "Speed changed",
-    //   description: `Video speed set to ${newSpeed}x`,
-    // });
   };
 
   // Apply filters
@@ -403,21 +427,12 @@ export default function EditorPage() {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-const handleTouchStart = (e: React.TouchEvent) => {
+  const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 1) {
-        touchStartX.current = e.touches[0].clientX;
-        touchStartTime.current = Date.now();
-    } else if (e.touches.length === 2) {
-        // Handle pinch-to-zoom
-        const touch1 = e.touches[0];
-        const touch2 = e.touches[1];
-        const initialDistance = Math.hypot(
-            touch2.clientX - touch1.clientX,
-            touch2.clientY - touch1.clientY
-        );
-        // Store initial distance for zoom calculations
+      touchStartX.current = e.touches[0].clientX;
+      touchStartTime.current = Date.now();
     }
-};
+  };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (e.touches.length === 1 && videoRef.current && duration > 0) {
@@ -445,7 +460,7 @@ const handleTouchStart = (e: React.TouchEvent) => {
       
       // Calculate momentum for smooth scrolling
       const velocity = deltaX / touchDuration;
-      const momentumDistance = velocity * 300; // 300ms momentum
+      const momentumDistance = velocity * 300;
       
       if (Math.abs(momentumDistance) > 10 && videoRef.current && duration > 0) {
         const momentumTimeChange = (momentumDistance / 100) * 5;
@@ -459,120 +474,430 @@ const handleTouchStart = (e: React.TouchEvent) => {
     }
   };
 
-  const handleExport = async (settings: any) => {
-    console.log("Starting export process with settings:", settings);
-    setShowExportModal(false);
-    setIsProcessing(true);
-    setProcessingProgress(0);
-    setProcessingStatus("Initializing export...");
+const processVideoForExport = async (settings: any): Promise<Blob> => {
+  setIsProcessing(true);
+  setProcessingProgress(0);
+  setProcessingStatus("Initializing FFmpeg...");
 
-    try {
-      if (!currentVideoFile) {
-        throw new Error("No video loaded to export");
-      }
+  try {
+    if (!currentVideoFile) throw new Error("No video loaded to export");
 
-      console.log("Current video file:", currentVideoFile.name, "Size:", currentVideoFile.size);
-      console.log("Export settings:", settings);
-      console.log("Current filters:", currentFilters);
-      console.log("Speed:", speed);
-      console.log("Text overlays:", textOverlays);
-      console.log("Audio tracks:", currentAudioFile);
-      console.log("Transitions:", transitions);
+    setProcessingStatus("Initializing video processor...");
+    console.log("Current video file:", currentVideoFile.name, "Size:", currentVideoFile.size);
 
-      // Prepare filters array for videoProcessor
-      const filters: string[] = [];
-      if (currentFilters.brightness !== undefined) filters.push(`eq=brightness=${currentFilters.brightness / 100}`);
-      if (currentFilters.contrast !== undefined) filters.push(`eq=contrast=${currentFilters.contrast / 100}`);
-      if (currentFilters.saturation !== undefined) filters.push(`eq=saturation=${currentFilters.saturation / 100}`);
-      if (currentFilters.hue !== undefined) filters.push(`hue=s=${currentFilters.hue}`);
-      if (currentFilters.blur !== undefined) filters.push(`boxblur=${currentFilters.blur}`);
-      if (currentFilters.sepia !== undefined) filters.push(`colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131`);
+    // Initialize FFmpeg with improved error handling
+    await videoProcessor.initialize();
 
-      console.log("Prepared filters:", filters);
+    // Prepare filters array for videoProcessor
+    setProcessingStatus("Preparing filters...");
+    const filters: string[] = [];
+    
+    if (currentFilters.brightness !== undefined && currentFilters.brightness !== 50) {
+      const brightnessValue = (currentFilters.brightness - 50) / 25;
+      filters.push(`eq=brightness=${brightnessValue}`);
+    }
+    
+    if (currentFilters.contrast !== undefined && currentFilters.contrast !== 50) {
+      const contrastValue = (currentFilters.contrast - 50) / 25;
+      filters.push(`eq=contrast=${contrastValue}`);
+    }
+    
+    if (currentFilters.saturation !== undefined && currentFilters.saturation !== 100) {
+      const saturationValue = currentFilters.saturation / 100;
+      filters.push(`eq=saturation=${saturationValue}`);
+    }
+    
+    if (currentFilters.hue !== undefined && currentFilters.hue !== 0) {
+      const hueValue = currentFilters.hue * 3.6;
+      filters.push(`hue=h=${hueValue}`);
+    }
+    
+    if (currentFilters.blur !== undefined && currentFilters.blur > 0) {
+      filters.push(`gblur=sigma=${currentFilters.blur / 10}`);
+    }
 
-      // Call videoProcessor to process full video with all edits
-      // Filter transitions to only include types supported by videoProcessor
-      const filteredTransitions = transitions.filter(t =>
-        ['fade', 'slide', 'zoom', 'dissolve'].includes(t.type)
-      ).map(t => ({
+    console.log("Prepared filters:", filters);
+
+    // Filter transitions
+    const filteredTransitions = transitions
+      .filter(t => ['fade', 'slide', 'zoom', 'dissolve'].includes(t.type))
+      .map(t => ({
         type: t.type as 'fade' | 'slide' | 'zoom' | 'dissolve',
         duration: t.duration,
         startTime: t.startTime
       }));
 
-      console.log("Filtered transitions:", filteredTransitions);
+    console.log("Filtered transitions:", filteredTransitions);
 
-      setProcessingStatus("Processing video...");
-      console.log("Calling videoProcessor.processVideo...");
+    // Create progress update function
+    const updateProgress = (progress: ProcessingProgress) => {
+      setProcessingProgress(progress.percentage);
+      setProcessingStatus(progress.stage || `Processing... ${Math.round(progress.percentage)}%`);
+      
+      // Simulate progress if it's stuck
+      if (progress.percentage === 0) {
+        setTimeout(() => {
+          setProcessingProgress(prev => Math.min(prev + 5, 95));
+        }, 1000);
+      }
+    };
 
-      const processedBlob = await videoProcessor.processVideo({
+    setProcessingStatus("Starting video processing...");
+    console.log("Calling videoProcessor.processVideo...");
+
+    const processedBlob = await videoProcessor.processVideo(
+      {
         inputFile: currentVideoFile,
         outputFormat: "mp4",
         resolution: settings.resolution,
         aspectRatio: settings.aspectRatio,
-        filters,
-        speed,
-        textOverlays,
+        filters: filters.length > 0 ? filters : undefined,
+        speed: speed,
+        textOverlays: textOverlays.length > 0 ? textOverlays : undefined,
         audioTracks: currentAudioFile ? [{
           file: currentAudioFile,
           startTime: 0,
           volume: 1,
-          fadeIn: 0,
-          fadeOut: 0
-        }] : [],
-        transitions: filteredTransitions,
-      }, (progress) => {
-        console.log("Processing progress:", progress);
-        setProcessingProgress(progress.percentage);
-        setProcessingStatus(progress.stage);
-      });
+          fadeIn: 0.5,
+          fadeOut: 0.5
+        }] : undefined,
+        transitions: filteredTransitions.length > 0 ? filteredTransitions : undefined,
+      },
+      updateProgress
+    );
 
-      console.log("Video processing completed. Blob size:", processedBlob.size);
-      
-      if (processedBlob.size === 0) {
-        throw new Error("Processed video blob is empty");
+    console.log("Video processing completed. Blob size:", processedBlob.size);
+    
+    if (processedBlob.size === 0) {
+      throw new Error("Processed video is empty - please try again");
+    }
+
+    setProcessingProgress(100);
+    setProcessingStatus("Processing complete!");
+    
+    // Small delay to show completion
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    setIsProcessing(false);
+    
+    toast({
+      title: "✅ Export completed",
+      description: "Your video has been processed successfully.",
+    });
+
+    return processedBlob;
+
+  } catch (error) {
+    console.error("Export error:", error);
+
+    let errorMessage = "Failed to process video. Please try again.";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+
+      // More specific error messages based on FFmpeg errors
+      if (error.message.includes("FFmpeg") || error.message.includes("load")) {
+        errorMessage = "Video processing engine failed to load. Please refresh the page and try again.";
+      } else if (error.message.includes("failed to import ffmpeg-core.js")) {
+        errorMessage = "FFmpeg core files could not be loaded. Please check your internet connection and try again.";
+      } else if (error.message.includes("All FFmpeg loading methods failed")) {
+        errorMessage = "FFmpeg initialization failed. Please refresh the page or try a different browser.";
+      } else if (error.message.includes("empty")) {
+        errorMessage = "The processed video is empty. Please try with different settings.";
+      } else if (error.message.includes("timeout")) {
+        errorMessage = "Video processing timed out. Please try with a shorter video or simpler settings.";
       }
+    }
 
-      // Create downloadable URL for processed video
-      setProcessingStatus("Preparing download...");
+    setProcessingStatus("Processing failed");
+    setProcessingProgress(0);
+
+    // Delay before hiding to show error state
+    setTimeout(() => {
+      setIsProcessing(false);
+    }, 1000);
+
+    toast({
+      title: "❌ Export failed",
+      description: errorMessage,
+      variant: "destructive",
+    });
+
+    throw error;
+  }
+};
+
+// Add this function to test FFmpeg initialization
+const testFFmpegInitialization = async (): Promise<boolean> => {
+  try {
+    console.log("🧪 Testing FFmpeg initialization...");
+    
+    // Check if videoProcessor has the initialize method
+    if (typeof videoProcessor.initialize !== 'function') {
+      console.error("❌ videoProcessor.initialize is not a function");
+      return false;
+    }
+    
+    // Try to initialize
+    await videoProcessor.initialize();
+    console.log("✅ FFmpeg initialized successfully");
+    
+    // Test with a simple operation
+    if (currentVideoFile) {
+      console.log("🧪 Testing simple trim operation...");
+      const testBlob = await videoProcessor.trimVideo(currentVideoFile, 0, 2);
+      console.log("✅ Trim test successful, blob size:", testBlob.size);
+      
+      if (testBlob.size === 0) {
+        console.error("❌ Test blob is empty");
+        return false;
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("❌ FFmpeg test failed:", error);
+    return false;
+  }
+};
+
+  // NEW: Handle export choice (download, save, or share)
+const handleExportChoice = async (settings: any, action: 'download' | 'save' | 'share') => {
+  try {
+    let processedBlob: Blob | null = null;
+    let retryCount = 0;
+    const maxRetries = 2;
+
+    // Retry mechanism for export processing
+    while (retryCount <= maxRetries) {
+      try {
+        processedBlob = await processVideoForExport(settings);
+        break; // Success, exit retry loop
+      } catch (error) {
+        retryCount++;
+        console.error(`Export attempt ${retryCount} failed:`, error);
+
+        if (retryCount <= maxRetries) {
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+
+          // Try to reinitialize FFmpeg for next attempt
+          try {
+            await videoProcessor.initialize();
+            toast({
+              title: "🔄 Retrying export",
+              description: `Attempt ${retryCount + 1} of ${maxRetries + 1}...`,
+            });
+          } catch (initError) {
+            console.error("FFmpeg reinitialization failed:", initError);
+          }
+        } else {
+          // All retries failed
+          let errorMessage = "Could not process the edited video.";
+          let errorTitle = "❌ Export failed";
+
+          if (error instanceof Error) {
+            if (error.message.includes("FFmpeg") || error.message.includes("load")) {
+              errorMessage = "Video processing engine failed to load. Please refresh the page and try again.";
+              errorTitle = "⚠️ Processing Engine Error";
+            } else if (error.message.includes("network") || error.message.includes("fetch")) {
+              errorMessage = "Network error occurred. Please check your internet connection and try again.";
+              errorTitle = "🌐 Network Error";
+            } else if (error.message.includes("memory") || error.message.includes("out of memory")) {
+              errorMessage = "Not enough memory to process this video. Try with a shorter video or lower resolution.";
+              errorTitle = "💾 Memory Error";
+            } else if (error.message.includes("timeout")) {
+              errorMessage = "Video processing timed out. Please try with a shorter video.";
+              errorTitle = "⏱️ Processing Timeout";
+            }
+          }
+
+          toast({
+            title: errorTitle,
+            description: errorMessage,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    }
+
+    // Only proceed if we have a valid processed blob
+    if (!processedBlob || processedBlob.size === 0) {
+      toast({
+        title: "❌ Export failed",
+        description: "The processed video is empty. Please try again with different settings.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Handle different export actions
+    if (action === 'download') {
       const exportedUrl = URL.createObjectURL(processedBlob);
-      console.log("Created object URL for download");
-
-      // Trigger download
       const a = document.createElement("a");
       a.href = exportedUrl;
-      a.download = `exported-video-${Date.now()}.mp4`;
-      console.log("Created download link with filename:", a.download);
-      
+      a.download = `edited-video-${Date.now()}.mp4`;
       document.body.appendChild(a);
       a.click();
-      a.remove();
-      console.log("Triggered download click");
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(exportedUrl);
+      }, 100);
+      toast({
+        title: "📥 Download started",
+        description: "Your edited video is being downloaded.",
+      });
+    } else if (action === 'save') {
+      await saveToDevice(processedBlob);
+    } else if (action === 'share') {
+      await shareVideo(processedBlob);
+    }
+  } catch (error) {
+    console.error("Export choice error:", error);
+    toast({
+      title: "❌ Unexpected error",
+      description: "An unexpected error occurred during export. Please try again.",
+      variant: "destructive",
+    });
+  }
+};
 
-      URL.revokeObjectURL(exportedUrl);
-      console.log("Revoked object URL");
+// Add this function to test if videoProcessor is working
+const testVideoProcessor = async () => {
+  try {
+    console.log("Testing video processor initialization...");
+    await videoProcessor.initialize();
+    console.log("Video processor initialized successfully");
 
-      setIsProcessing(false);
-      setProcessingProgress(0);
-      setProcessingStatus("Processing...");
-      console.log("Export process completed successfully");
+    // Test with a simple operation
+    if (currentVideoFile) {
+      console.log("Testing trim operation...");
+      const testBlob = await videoProcessor.trimVideo(currentVideoFile, 0, 5);
+      console.log("Test trim successful, blob size:", testBlob.size);
+
+      if (testBlob.size === 0) {
+        console.error("Test blob is empty - video processing may not be working correctly");
+      }
+    }
+  } catch (error) {
+    console.error("Video processor test failed:", error);
+
+    let errorMessage = "Video processor test failed.";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+
+      // More specific error messages based on FFmpeg errors
+      if (error.message.includes("FFmpeg") || error.message.includes("load")) {
+        errorMessage = "Video processing engine failed to load during test.";
+      } else if (error.message.includes("failed to import ffmpeg-core.js")) {
+        errorMessage = "FFmpeg core files could not be loaded during test.";
+      } else if (error.message.includes("All FFmpeg loading methods failed")) {
+        errorMessage = "FFmpeg initialization failed during test.";
+      } else if (error.message.includes("empty")) {
+        errorMessage = "Test operation produced empty result.";
+      }
+    }
+
+    console.error("Test error details:", errorMessage);
+  }
+};
+
+// Call this in useEffect or when needed
+useEffect(() => {
+  if (currentVideoFile) {
+    testVideoProcessor();
+  }
+}, [currentVideoFile]);
+
+  // NEW: Save video to device
+const saveToDevice = async (blob: Blob) => {
+  try {
+    if ('showSaveFilePicker' in window) {
+      const handle = await (window as any).showSaveFilePicker({
+        suggestedName: `video-${Date.now()}.mp4`,
+        types: [{
+          description: 'MP4 Video',
+          accept: {'video/mp4': ['.mp4']},
+        }],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
       
       toast({
-        title: "Export completed",
-        description: "Your video has been exported successfully.",
+        title: "💾 Video saved",
+        description: "Video has been saved to your device.",
       });
-    } catch (error) {
-      console.error("Export error:", error);
-      setIsProcessing(false);
-      setProcessingProgress(0);
-      setProcessingStatus("Processing...");
+    } else {
+      // Fallback to download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `video-${Date.now()}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
       toast({
-        title: "Export failed",
-        description: error instanceof Error ? error.message : "Failed to export video. Please try again.",
+        title: "📥 Download started",
+        description: "Your video is being downloaded.",
+      });
+    }
+  } catch (error) {
+    console.error("Save error:", error);
+    toast({
+      title: "❌ Save failed",
+      description: "Failed to save video.",
+      variant: "destructive",
+    });
+  }
+};
+
+const shareVideo = async (blob: Blob) => {
+  try {
+    if (navigator.share) {
+      const file = new File([blob], `video-${Date.now()}.mp4`, { type: 'video/mp4' });
+      
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'My Edited Video',
+          text: 'Check out this video I edited!',
+        });
+        
+        toast({
+          title: "📤 Video shared",
+          description: "Your video has been shared successfully.",
+        });
+      } else {
+        toast({
+          title: "❌ Sharing not supported",
+          description: "Your device doesn't support sharing video files.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      toast({
+        title: "❌ Sharing not supported",
+        description: "Your browser doesn't support sharing.",
         variant: "destructive",
       });
     }
-  };
+  } catch (error) {
+    console.error("Share error:", error);
+    if (error instanceof Error && error.name !== 'AbortError') {
+      toast({
+        title: "❌ Share failed",
+        description: "Failed to share video.",
+        variant: "destructive",
+      });
+    }
+  }
+};
+
+  // NEW: Share video
+
 
   // Check if text overlay should be visible at current time
   const isOverlayVisible = (overlay: TextOverlayData) => {
@@ -589,15 +914,14 @@ const handleTouchStart = (e: React.TouchEvent) => {
       
       {/* Editor Header */}
       <div className="flex justify-between items-center px-4 py-3 bg-secondary">
-      <Button
-  variant="ghost"
-  size="icon"
-  onClick={() => setLocation("/")}
-  className="rounded-full hover:bg-[#6344fd]/30 text-[#6344fd] transition-all duration-200"
->
-  <ArrowLeft className="w-5 h-5" />
-</Button>
-
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setLocation("/")}
+          className="rounded-full hover:bg-[#6344fd]/30 text-[#6344fd] transition-all duration-200"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
         
         <h1 className="text-lg font-semibold truncate mx-4">{project?.name || "New Project"}</h1>
         
@@ -615,10 +939,7 @@ const handleTouchStart = (e: React.TouchEvent) => {
             size="icon"
             onClick={undo}
             disabled={!canUndo}
-          className={`${!canUndo ? "text-gray-600" : "text-gray-400"} rounded-full hover:text-white hover:bg-[#6344fd]/30`}
-
-
-
+            className={`${!canUndo ? "text-gray-600" : "text-gray-400"} rounded-full hover:text-white hover:bg-[#6344fd]/30`}
           >
             <Undo className="w-5 h-5" />
           </Button>
@@ -627,10 +948,7 @@ const handleTouchStart = (e: React.TouchEvent) => {
             size="icon"
             onClick={redo}
             disabled={!canRedo}
-          className={`${!canUndo ? "text-gray-600" : "text-gray-400"} rounded-full hover:text-white hover:bg-[#6344fd]/30`}
-
-
-
+            className={`${!canUndo ? "text-gray-600" : "text-gray-400"} rounded-full hover:text-white hover:bg-[#6344fd]/30`}
           >
             <Redo className="w-5 h-5" />
           </Button>
@@ -638,156 +956,156 @@ const handleTouchStart = (e: React.TouchEvent) => {
       </div>
 
       {/* Video Preview */}
-          {currentVideoFile ? (
-            <div className="flex-1 flex items-center justify-center bg-black relative">
-              {isVideoLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 z-10">
-                  <div className="text-center text-white">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                    <p>Loading video...</p>
-                  </div>
-                </div>
-              )}
-              
-              <video
-                ref={videoRef}
-                className="max-w-full max-h-full object-contain"
-                controls={false}
-                preload="metadata"
-                playsInline
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  // Only toggle if video is loaded
-                  if (videoRef.current && videoRef.current.src) {
-                    togglePlayback();
-                  }
-                }}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                onLoadedMetadata={() => {
-                  console.log("Video metadata loaded in preview");
-                  if (videoRef.current) {
-                    setDuration(videoRef.current.duration);
-                    setVideoElement(videoRef.current);
-                  }
-                }}
-                onTimeUpdate={() => {
-                  if (videoRef.current) {
-                    setCurrentTime(videoRef.current.currentTime);
-                  }
-                }}
-                onPlay={() => {
-                  // Update state when video starts playing
-                  if (!isPlaying) {
-                    togglePlayback();
-                  }
-                }}
-                onPause={() => {
-                  // Update state when video pauses
-                  if (isPlaying) {
-                    togglePlayback();
-                  }
-                }}
-                style={{ filter: Object.keys(currentFilters).length > 0 ? 
-                  Object.entries(currentFilters).map(([key, value]) => {
-                    switch(key) {
-                      case 'brightness': return `brightness(${value}%)`;
-                      case 'contrast': return `contrast(${value}%)`;
-                      case 'saturation': return `saturate(${value}%)`;
-                      case 'hue': return `hue-rotate(${value}deg)`;
-                      case 'blur': return `blur(${value}px)`;
-                      case 'sepia': return `sepia(${value}%)`;
-                      default: return '';
-                    }
-                  }).join(' ') : 'none'
-                }}
-              />
-              
-              {/* Text Overlays */}
-              {textOverlays.map(overlay => (
-                isOverlayVisible(overlay) && (
-                  <div
-                    key={overlay.id}
-                    className="absolute pointer-events-none select-none"
-                    style={{
-                      left: `${overlay.x}%`,
-                      top: `${overlay.y}%`,
-                      transform: 'translate(-50%, -50%)',
-                      fontSize: `${overlay.fontSize}px`,
-                      fontFamily: overlay.fontFamily,
-                      color: overlay.color,
-                      backgroundColor: overlay.backgroundColor,
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      opacity: overlay.backgroundOpacity,
-                      textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-                      whiteSpace: 'nowrap',
-                      zIndex: 10
-                    }}
-                  >
-                    {overlay.text}
-                  </div>
-                )
-              ))}
-              
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                {!isPlaying && !isVideoLoading && (
-                  <div className="bg-black bg-opacity-50 rounded-full p-4">
-                    <Play className="w-12 h-12 text-white" />
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex-1 flex items-center justify-center bg-black">
-              <div className="text-center text-gray-400">
-                <Upload className="w-16 h-16 mx-auto mb-4 text-gray-500" />
-                <p className="text-lg mb-2">No video loaded</p>
-                <p className="text-sm">Tap "Add Media" to get startedsss</p>
+      {currentVideoFile ? (
+        <div className="flex-1 flex items-center justify-center bg-black relative">
+          {isVideoLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 z-10">
+              <div className="text-center text-white">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                <p>Loading video...</p>
               </div>
             </div>
           )}
+          
+          <video
+            ref={videoRef}
+            className="max-w-full max-h-full object-contain"
+            controls={false}
+            preload="metadata"
+            playsInline
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              // Only toggle if video is loaded
+              if (videoRef.current && videoRef.current.src) {
+                togglePlayback();
+              }
+            }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onLoadedMetadata={() => {
+              console.log("Video metadata loaded in preview");
+              if (videoRef.current) {
+                setDuration(videoRef.current.duration);
+                setVideoElement(videoRef.current);
+              }
+            }}
+            onTimeUpdate={() => {
+              if (videoRef.current) {
+                setCurrentTime(videoRef.current.currentTime);
+              }
+            }}
+            onPlay={() => {
+              // Update state when video starts playing
+              if (!isPlaying) {
+                togglePlayback();
+              }
+            }}
+            onPause={() => {
+              // Update state when video pauses
+              if (isPlaying) {
+                togglePlayback();
+              }
+            }}
+            style={{ filter: Object.keys(currentFilters).length > 0 ? 
+              Object.entries(currentFilters).map(([key, value]) => {
+                switch(key) {
+                  case 'brightness': return `brightness(${value}%)`;
+                  case 'contrast': return `contrast(${value}%)`;
+                  case 'saturation': return `saturate(${value}%)`;
+                  case 'hue': return `hue-rotate(${value}deg)`;
+                  case 'blur': return `blur(${value}px)`;
+                  case 'sepia': return `sepia(${value}%)`;
+                  default: return '';
+                }
+              }).join(' ') : 'none'
+            }}
+          />
+          
+          {/* Text Overlays */}
+          {textOverlays.map(overlay => (
+            isOverlayVisible(overlay) && (
+              <div
+                key={overlay.id}
+                className="absolute pointer-events-none select-none"
+                style={{
+                  left: `${overlay.x}%`,
+                  top: `${overlay.y}%`,
+                  transform: 'translate(-50%, -50%)',
+                  fontSize: `${overlay.fontSize}px`,
+                  fontFamily: overlay.fontFamily,
+                  color: overlay.color,
+                  backgroundColor: overlay.backgroundColor,
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  opacity: overlay.backgroundOpacity,
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                  whiteSpace: 'nowrap',
+                  zIndex: 10
+                }}
+              >
+                {overlay.text}
+              </div>
+            )
+          ))}
+          
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            {!isPlaying && !isVideoLoading && (
+              <div className="bg-black bg-opacity-50 rounded-full p-4">
+                <Play className="w-12 h-12 text-white" />
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 flex items-center justify-center bg-black">
+          <div className="text-center text-gray-400">
+            <Upload className="w-16 h-16 mx-auto mb-4 text-gray-500" />
+            <p className="text-lg mb-2">No video loaded</p>
+            <p className="text-sm">Tap "Add Media" to get started</p>
+          </div>
+        </div>
+      )}
 
       {/* Playback Timeline */}
       <div className="px-4 py-3 bg-secondary">
-          <div className="flex items-center space-x-3 mb-2">
-            <button
-              onClick={togglePlayback}
-              className="text-gray-400 hover:text-white focus:outline-none"
-              aria-label={isPlaying ? "Pause" : "Play"}
-            >
-              {isPlaying ? (
-                <Pause className="w-5 h-5" />
-              ) : (
-                <Play className="w-5 h-5" />
-              )}
-            </button>
-            <span className="text-sm text-gray-400">{formatTime(currentTime)}</span>
-            <div className="flex-1 relative">
-              <div className="h-1 bg-gray-600 rounded-full">
-                <div 
-                  className="h-1 bg-accent rounded-full transition-all"
-                  style={{ width: `${(currentTime / duration) * 100}%` }}
-                ></div>
-              </div>
+        <div className="flex items-center space-x-3 mb-2">
+          <button
+            onClick={togglePlayback}
+            className="text-gray-400 hover:text-white focus:outline-none"
+            aria-label={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying ? (
+              <Pause className="w-5 h-5" />
+            ) : (
+              <Play className="w-5 h-5" />
+            )}
+          </button>
+          <span className="text-sm text-gray-400">{formatTime(currentTime)}</span>
+          <div className="flex-1 relative">
+            <div className="h-1 bg-gray-600 rounded-full">
               <div 
-                className="absolute top-1/2 transform -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg cursor-pointer"
-                style={{ left: `${(currentTime / duration) * 100}%` }}
-                onMouseDown={(e) => {
-                  const rect = e.currentTarget.parentElement?.getBoundingClientRect();
-                  if (rect) {
-                    const percent = (e.clientX - rect.left) / rect.width;
-                    seekTo(percent * duration);
-                  }
-                }}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
+                className="h-1 bg-accent rounded-full transition-all"
+                style={{ width: `${(currentTime / duration) * 100}%` }}
               ></div>
             </div>
+            <div 
+              className="absolute top-1/2 transform -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg cursor-pointer"
+              style={{ left: `${(currentTime / duration) * 100}%` }}
+              onMouseDown={(e) => {
+                const rect = e.currentTarget.parentElement?.getBoundingClientRect();
+                if (rect) {
+                  const percent = (e.clientX - rect.left) / rect.width;
+                  seekTo(percent * duration);
+                }
+              }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            ></div>
           </div>
+        </div>
       </div>
 
       {/* Editing Tools */}
@@ -1056,11 +1374,46 @@ const handleTouchStart = (e: React.TouchEvent) => {
         </div>
       </div>
 
+      {/* Updated Export Modal with options */}
       <ExportModal
         show={showExportModal}
         onClose={() => setShowExportModal(false)}
-        onExport={handleExport}
+        onExport={processVideoForExport}
+        currentVideoFile={currentVideoFile}
       />
+
+      {/* Body Tools Modal */}
+      {showBodyTools && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-2xl font-bold">Body & Face Tools</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowBodyTools(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <BodyTools
+                currentVideoFile={currentVideoFile}
+                onVideoProcessed={(processedBlob) => {
+                  // Convert blob back to file for further processing
+                  const processedFile = new File([processedBlob], 'processed-video.mp4', { type: 'video/mp4' });
+                  setCurrentVideoFile(processedFile);
+                  setShowBodyTools(false);
+                  toast({
+                    title: "✅ Video processed",
+                    description: "Your video has been processed with the selected effects.",
+                  });
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <ProcessingModal 
         isOpen={isProcessing}
